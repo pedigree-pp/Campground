@@ -2,12 +2,24 @@ const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 
+// Route files
+const auth = require('./routes/auth.js');
+
 // Load env vars
 dotenv.config({path:'./config/config.env'});
 // Connect to databse
 connectDB();
 
 const app = express();
+
+// Body parser
+app.use(express.json());
+
+// Cookie parser
+app.use(cookieParser());
+
+// Mount routers
+app.use('/api/v1/auth', auth);
 
 const PORT=process.env.PORT || 5000;
 
