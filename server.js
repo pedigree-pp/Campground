@@ -8,7 +8,7 @@ const auth = require('./routes/auth.js');
 
 // Load env vars
 dotenv.config({path:'./config/config.env'});
-// Connect to databse
+// Connect to database
 connectDB();
 
 const app = express();
