@@ -20,7 +20,10 @@ exports.register = async (req, res, next) => {
         sendTokenResponse(user, 201, res);
         
     } catch (err) {
-        res.status(400).json({success: false});
+        res.status(400).json({
+            success: false,
+            msg: err.code === 11000 ? 'Email is already registered' : err.message
+        });
         console.log(err.stack);
     }
 }
@@ -95,10 +98,9 @@ const sendTokenResponse = (user, statusCode, res) => {
 //@route    GET /api/v1/auth/me
 //@access   Private
 exports.getMe = async (req, res, next) => {
-    const user = await User.findById(req.user.id);
     res.status(200).json({
         success: true,
-        data: user
+        data: req.user
     });
 }
 

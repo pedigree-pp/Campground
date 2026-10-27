@@ -94,7 +94,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status is 400', () => pm.response.to.have.status(400));",
-                  "pm.test('success is false', () => pm.expect(pm.response.json().success).to.eql(false));"
+                  "pm.test('success is false', () => pm.expect(pm.response.json().success).to.eql(false));",
+                  "pm.test('says the email is taken', () => pm.expect(pm.response.json().msg).to.eql('Email is already registered'));"
                 ]
               }
             }
@@ -135,7 +136,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status is 400', () => pm.response.to.have.status(400));",
-                  "pm.test('success is false', () => pm.expect(pm.response.json().success).to.eql(false));"
+                  "pm.test('success is false', () => pm.expect(pm.response.json().success).to.eql(false));",
+                  "pm.test('says the name is missing', () => pm.expect(pm.response.json().msg).to.include('Please add a name'));"
                 ]
               }
             }
@@ -526,6 +528,56 @@
           ]
         },
         {
+          "name": "Login with padded upper-case email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{mixedEmail}}\",\n  \"password\": \"123456\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('mixedEmail', `  ${pm.collectionVariables.get('userEmail').toUpperCase()}  `);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success is true', () => pm.expect(pm.response.json().success).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Get me",
           "request": {
             "method": "GET",
@@ -680,6 +732,10 @@
     },
     {
       "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "mixedEmail",
       "value": ""
     },
     {

@@ -21,9 +21,15 @@ exports.protect = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        console.log(decoded);
-
         req.user = await User.findById(decoded.id);
+
+        // Token can outlive its user
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'User no longer exists'
+            });
+        }
 
         next();
     } catch (err) {
