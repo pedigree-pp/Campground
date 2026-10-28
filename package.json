@@ -25,7 +25,7 @@
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.10.3"
+    "mongoose": "^9.11.4"
   },
   "devDependencies": {
     "newman": "^6.2.3",

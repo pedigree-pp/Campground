@@ -1,19 +1,64 @@
-exports.getCampgrounds = (req,res,next) => {
-    res.status(200).json({success:true, msg:'Show all campgrounds'})
+const Campground = require('../models/Campground');
+
+exports.getCampgrounds = async(req,res,next) => {
+    try{
+        const campgrounds = await Campground.find();
+        res.status(200).json({success:true, data:campgrounds}); 
+    }catch(err){
+        res.status(400).json({success:false});
+    }
 }
 
-exports.getCampground = (req,res,next) => {
-    res.status(200).json({success:true, msg:'Show one campground'})
+exports.getCampground = async(req,res,next) => {
+    try{
+        const campground = await Campground.findById(req.params.id);
+
+        if(!campground){
+            res.status(400).json({success:false});
+        }
+
+        res.status(200).json({success:true, data:campground});
+    }catch(err){
+        res.status(400).json({success:false});
+    }
 }
 
-exports.createCampground = (req,res,next) => {
-    res.status(200).json({success:true, msg:'Create campground successfully'})
+exports.createCampground = async(req,res,next) => {
+    try{
+        const campground = await Campground.create(req.body);
+        res.status(201).json({success:true, data:campground});
+    }catch(err){
+        res.status(400).json({success:false});
+    }
 }
 
-exports.updateCampground = (req,res,next) => {
-    res.status(200).json({success:true, msg:'Update campground successfully'})
+exports.updateCampground = async(req,res,next) => {
+    try{
+        const campground = await Campground.findByIdAndUpdate(req.params.id, req.body, {
+            returnDocument: 'after',
+            runValidators: true
+        });
+        
+        if(!campground){
+            res.status(400).json({success:false});
+        }
+
+        res.status(200).json({success:true, data:campground});
+    }catch(err){
+        res.status(400).json({success:false});
+    }
 }
 
-exports.deleteCampground = (req,res,next) => {
-    res.status(200).json({success:true, msg:'Delete campground successfully'})
+exports.deleteCampground = async(req,res,next) => {
+    try{
+        const campground = await Campground.findByIdAndDelete(req.params.id);
+        
+        if(!campground){
+            res.status(400).json({success:false});
+        }
+
+        res.status(200).json({success:true, data: {}});
+    }catch(err){
+        res.status(400).json({success:false});
+    }
 }
