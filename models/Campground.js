@@ -6,7 +6,7 @@ const CampGroundSchema = new mongoose.Schema({
         required: [true, 'Please add a name'],
         unique: true,
         trim: true,
-        maxlenght: [50, 'Name cannot be more than 50 characters']
+        maxlength: [50, 'Name cannot be more than 50 characters']
     },
     address:{
         type: String,
@@ -27,7 +27,7 @@ const CampGroundSchema = new mongoose.Schema({
     postalcode:{
         type: String,
         required: [true, 'Please add a postalcode'],
-        maxlenght: [5, 'Postalcode cannot be more than 5 characters']
+        maxlength: [5, 'Postalcode cannot be more than 5 characters']
     },
     telephone:{
         type: String,
@@ -40,8 +40,9 @@ const CampGroundSchema = new mongoose.Schema({
     capacity:{
         type: Number,
         required: [true, 'Please add capacity'],
-        minlenght: [1, 'Capacity must be at least 1']
+        min: [1, 'Capacity must be at least 1'],
+        validate: [Number.isInteger, 'Capacity must be a whole number']
     },
 })
 
-module.exports = mongoose.model('CampGround',CampGroundSchema);
+module.exports = mongoose.model('Campground',CampGroundSchema);
