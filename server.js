@@ -31,13 +31,13 @@ app.use(mongoSanitize());
 // Set security headers
 app.use(helmet());
 
-// Prevent XSS attacks
-app.use(xss());
+// Prevent XSS attacks (passwords are hashed, never shown, so keep them as typed)
+app.use(xss({allowedKeys: ['password']}));
 
 // Rate Limiting
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 mins
-    max: process.env.RATE_LIMIT_MAX || 100
+    max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100
 });
 app.use(limiter);
 
