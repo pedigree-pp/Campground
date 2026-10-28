@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 
 // Route files
 const auth = require('./routes/auth.js');
+const campgrounds = require('./routes/campground.js');
 
 // Load env vars
 dotenv.config({path:'./config/config.env'});
@@ -21,6 +22,7 @@ app.use(cookieParser());
 
 // Mount routers
 app.use('/api/v1/auth', auth);
+app.use('/api/v1/campgrounds', campgrounds);
 
 const PORT=process.env.PORT || 5000;
 

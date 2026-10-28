@@ -1,7 +1,7 @@
 {
   "name": "campground",
   "version": "1.0.0",
-  "description": "",
+  "description": "Campground Booking REST API (2110503 SW Dev Practice term project).",
   "homepage": "https://github.com/pedigree-pp/Campground#readme",
   "bugs": {
     "url": "https://github.com/pedigree-pp/Campground/issues"
@@ -22,10 +22,10 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
-    "dotenv": "^18.0.5",
-    "express": "^5.2.1",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.10.3"
+    "mongoose": "^9.11.4"
   },
   "devDependencies": {
     "newman": "^6.2.3",
