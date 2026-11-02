@@ -25,7 +25,7 @@ exports.getCampground = async(req,res,next) => {
         const campground = await Campground.findById(req.params.id);
 
         if(!campground){
-            return res.status(400).json({success:false, msg:"Campground Not Found"});
+            return res.status(404).json({success:false, msg:"Campground Not Found"});
         }
 
         res.status(200).json({success:true, data:campground});
@@ -57,7 +57,7 @@ exports.updateCampground = async(req,res,next) => {
         });
         
         if(!campground){
-            return res.status(400).json({success:false});
+            return res.status(404).json({success:false});
         }
 
         res.status(200).json({success:true, data:campground});
@@ -74,7 +74,7 @@ exports.deleteCampground = async(req,res,next) => {
         const campground = await Campground.findByIdAndDelete(req.params.id);
         
         if(!campground){
-            return res.status(400).json({success:false});
+            return res.status(404).json({success:false});
         }
 
         res.status(200).json({success:true, data: {}});
