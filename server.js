@@ -18,6 +18,9 @@ connectDB();
 
 const app = express();
 
+// Set query parser to extended (enables nested object parsing like capacity[gte]=4)
+app.set('query parser', 'extended');
+
 // Body parser
 app.use(express.json());
 
