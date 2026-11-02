@@ -1,3 +1,6 @@
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 const express = require('express');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
@@ -60,7 +63,7 @@ app.use(cors());
 
 // Mount routers
 app.use('/api/v1/auth', auth);
-app.use('/api/v1/campground', campgrounds);
+app.use('/api/v1/campgrounds', campgrounds);
 app.use('/api/v1/bookings', bookings);
 
 const PORT=process.env.PORT || 5000;
