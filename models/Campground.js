@@ -48,12 +48,5 @@ const CampGroundSchema = new mongoose.Schema({
     toObject: {virtuals:true}
 })
 
-// Reverse populate with virtuals
-CampGroundSchema.virtual('bookings',{
-    ref: 'Booking',
-    localField: '_id',
-    foreignField: 'campground',
-    justOne: false
-})
 
 module.exports = mongoose.model('Campground',CampGroundSchema);
