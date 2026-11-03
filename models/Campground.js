@@ -42,18 +42,7 @@ const CampGroundSchema = new mongoose.Schema({
         required: [true, 'Please add capacity'],
         min: [1, 'Capacity must be at least 1'],
         validate: [Number.isInteger, 'Capacity must be a whole number']
-    },
-},{
-    toJSON: {virtuals:true},
-    toObject: {virtuals:true}
-})
-
-// Reverse populate with virtuals
-CampGroundSchema.virtual('bookings',{
-    ref: 'Booking',
-    localField: '_id',
-    foreignField: 'campground',
-    justOne: false
-})
+    }
+});
 
 module.exports = mongoose.model('Campground',CampGroundSchema);

@@ -725,6 +725,982 @@
       ]
     },
     {
+      "name": "Campgrounds",
+      "item": [
+        {
+          "name": "Create campground as admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Khao Yai {{campgroundSuffix}}\",\n  \"address\": \"123 Mittraphap Rd\",\n  \"district\": \"Pak Chong\",\n  \"province\": \"Nakhon Ratchasima\",\n  \"region\": \"Northeast\",\n  \"postalcode\": \"30130\",\n  \"telephone\": \"0812345678\",\n  \"capacity\": 5\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set(\"campgroundSuffix\", suffix);",
+                  "pm.collectionVariables.set(\"campgroundName\", `Khao Yai ${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"success is true\", () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test(\"returns created campground data\", () => {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.be.an(\"object\");",
+                  "  pm.expect(data.capacity).to.eql(5);",
+                  "  pm.expect(data).to.not.have.property(\"bookings\");",
+                  "  pm.collectionVariables.set(\"campgroundId\", data._id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create campground without token fails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"No Token Camp\",\n  \"address\": \"123 Mittraphap Rd\",\n  \"district\": \"Pak Chong\",\n  \"province\": \"Nakhon Ratchasima\",\n  \"region\": \"Northeast\",\n  \"postalcode\": \"30130\",\n  \"telephone\": \"0812345678\",\n  \"capacity\": 5\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create campground by user fails with 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"User Camp\",\n  \"address\": \"123 Mittraphap Rd\",\n  \"district\": \"Pak Chong\",\n  \"province\": \"Nakhon Ratchasima\",\n  \"region\": \"Northeast\",\n  \"postalcode\": \"30130\",\n  \"telephone\": \"0812345678\",\n  \"capacity\": 5\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create campground with missing fields fails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Missing Fields Camp\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create campground with duplicate name fails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{campgroundName}}\",\n  \"address\": \"456 Other Rd\",\n  \"district\": \"Pak Chong\",\n  \"province\": \"Nakhon Ratchasima\",\n  \"region\": \"Northeast\",\n  \"postalcode\": \"30130\",\n  \"telephone\": \"0812345678\",\n  \"capacity\": 5\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create campground with bad telephone fails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad Tel Camp {{$timestamp}}\",\n  \"address\": \"123 Mittraphap Rd\",\n  \"district\": \"Pak Chong\",\n  \"province\": \"Nakhon Ratchasima\",\n  \"region\": \"Northeast\",\n  \"postalcode\": \"30130\",\n  \"telephone\": \"12345\",\n  \"capacity\": 5\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create campground with capacity below 1 fails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Zero Cap Camp {{$timestamp}}\",\n  \"address\": \"123 Mittraphap Rd\",\n  \"district\": \"Pak Chong\",\n  \"province\": \"Nakhon Ratchasima\",\n  \"region\": \"Northeast\",\n  \"postalcode\": \"30130\",\n  \"telephone\": \"0812345678\",\n  \"capacity\": 0\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get all campgrounds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"success is true\", () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test(\"returns pagination and data array\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.data).to.be.an(\"array\");",
+                  "  pm.expect(res).to.have.property(\"pagination\");",
+                  "  pm.expect(res.data[0]._id).to.eql(pm.collectionVariables.get(\"campgroundId\"));",
+                  "  res.data.forEach(item => {",
+                  "    pm.expect(item).to.not.have.property(\"bookings\");",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get campgrounds with filter gt/gte",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds?capacity[gte]=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ],
+              "query": [
+                {
+                  "key": "capacity[gte]",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"filtered data capacity is >= 1\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.data).to.be.an(\"array\");",
+                  "  res.data.forEach(c => pm.expect(c.capacity).to.be.at.least(1));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get campgrounds with select",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds?select=name,telephone",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "name,telephone"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"select fields respected\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.data).to.be.an(\"array\");",
+                  "  if (res.data.length > 0) {",
+                  "    pm.expect(res.data[0]).to.have.property(\"name\");",
+                  "    pm.expect(res.data[0]).to.not.have.property(\"district\");",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get campgrounds with pagination",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds?page=1&limit=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"paginated data length <= limit\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.data).to.be.an(\"array\");",
+                  "  pm.expect(res.data.length).to.be.at.most(2);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get single campground",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"returns campground data\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.success).to.eql(true);",
+                  "  pm.expect(res.data._id).to.eql(pm.collectionVariables.get(\"campgroundId\"));",
+                  "  pm.expect(res.data).to.not.have.property(\"bookings\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get single campground unknown id returns 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/507f1f77bcf86cd799439011",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "507f1f77bcf86cd799439011"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get campground availability with valid dates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/availability?checkInDate=2026-11-20&checkOutDate=2026-11-23",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "checkInDate",
+                  "value": "2026-11-20"
+                },
+                {
+                  "key": "checkOutDate",
+                  "value": "2026-11-23"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"empty campground has every spot free\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.success).to.eql(true);",
+                  "  pm.expect(res.data.available).to.eql(true);",
+                  "  pm.expect(res.data.spotsLeft).to.eql(res.data.capacity);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get campground availability invalid dates fails",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/availability?checkInDate=2026-11-23&checkOutDate=2026-11-20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "checkInDate",
+                  "value": "2026-11-23"
+                },
+                {
+                  "key": "checkOutDate",
+                  "value": "2026-11-20"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get campground availability unknown campground returns 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/507f1f77bcf86cd799439011/availability?checkInDate=2026-11-20&checkOutDate=2026-11-23",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "507f1f77bcf86cd799439011",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "checkInDate",
+                  "value": "2026-11-20"
+                },
+                {
+                  "key": "checkOutDate",
+                  "value": "2026-11-23"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update campground by user fails with 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 8\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update campground with capacity below 1 fails",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 0\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update campground as admin",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 10\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"capacity is updated to 10\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.success).to.eql(true);",
+                  "  pm.expect(res.data.capacity).to.eql(10);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete campground by user fails with 403",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete campground as admin",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"success is true\", () => pm.expect(pm.response.json().success).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get campground after deletion returns 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{campgroundId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Security",
       "item": [
         {
@@ -1031,6 +2007,18 @@
     },
     {
       "key": "tagPwEmail",
+      "value": ""
+    },
+    {
+      "key": "campgroundId",
+      "value": ""
+    },
+    {
+      "key": "campgroundName",
+      "value": ""
+    },
+    {
+      "key": "campgroundSuffix",
       "value": ""
     }
   ]
