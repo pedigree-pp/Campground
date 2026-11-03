@@ -1,4 +1,5 @@
 const Booking = require('../models/Booking');
+const Campground = require('../models/Campground');
 
 //@desc     Get all bookings
 //@route    GET /api/v1/bookings
@@ -56,4 +57,11 @@ exports.getBooking = async(req,res,next)=>{
     }catch(err){
         return res.status(500).json({success: false});
     }
+}
+
+//@desc     Create booking
+//@route    POST /api/v1/hospitals/:campgroundId/appointment
+//@access   Public
+exports.createCampground = async(req,res,next)=>{
+    try
 }
