@@ -1871,13 +1871,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -1920,13 +1920,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -1969,13 +1969,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -2018,13 +2018,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -2116,13 +2116,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -2167,13 +2167,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -2216,13 +2216,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -2265,13 +2265,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -2622,7 +2622,7 @@
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
                   "pm.test(\"returns count and data\", () => {",
                   "  const res = pm.response.json();",
-                  "  pm.expect(res.count).to.be.at.least(3);",
+                  "  pm.expect(res.count).to.eql(3);",
                   "  pm.expect(res.data).to.be.an(\"array\");",
                   "});"
                 ]
@@ -2641,13 +2641,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campgrounds/{{campgroundId}}/bookings",
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "campgrounds",
-                "{{campgroundId}}",
+                "{{cap1CampgroundId}}",
                 "bookings"
               ]
             },
@@ -2671,6 +2671,7 @@
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
                   "pm.test(\"returns array\", () => {",
                   "  pm.expect(pm.response.json().data).to.be.an(\"array\");",
+                  "  pm.expect(pm.response.json().count).to.eql(3);",
                   "});"
                 ]
               }

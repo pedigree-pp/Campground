@@ -158,6 +158,7 @@ exports.createBooking = async (req, res, next) => {
             }
         }
 
+        // shortcut: the checks above and this create are separate calls, so parallel requests can overbook; use a transaction if real traffic arrives
         // Create booking (user taken from token, never from body)
         const booking = await Booking.create({
             user: req.user.id,
