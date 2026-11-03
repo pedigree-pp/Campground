@@ -18,7 +18,7 @@ exports.getCampgrounds = async(req,res,next) => {
     console.log(reqQuery)
 
     let queryStr = JSON.stringify(reqQuery);
-    queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match=>`$${match}`);
+    queryStr = queryStr.replace(/"(gt|gte|lt|lte|in)":/g, (match, op)=>`"$${op}":`);
 
     query = Campground.find(JSON.parse(queryStr));
 
@@ -41,7 +41,7 @@ exports.getCampgrounds = async(req,res,next) => {
     const limit = parseInt(req.query.limit,10) || 25;
     const startIndex = (page-1)*limit;
     const endIndex = page*limit;
-    const total = await Campground.countDocuments();
+    const total = await Campground.countDocuments(query.getFilter());
 
     query = query.skip(startIndex).limit(limit);
 
@@ -110,7 +110,8 @@ exports.getAvailability = async(req,res,next) => {
         const start = new Date(checkInDate);
         const end = new Date(checkOutDate);
 
-        if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+        const isDay = /^\d{4}-\d{2}-\d{2}$/;
+        if (!isDay.test(checkInDate) || !isDay.test(checkOutDate) || isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
             return res.status(400).json({ success: false });
         }
 
@@ -130,25 +131,22 @@ exports.getAvailability = async(req,res,next) => {
             checkOutDate: {$gt: start},
         })
 
+        //The fullest Night is check-in or a Night when another Booking starts
         let maxOccupied = 0;
-        for (let d = new Date(start); d < end; d.setUTCDate(d.getUTCDate() + 1)) {
-            const currentNight = new Date(d);
-            const count = bookings.filter(b => {
-                const bIn = new Date(b.checkInDate);
-                const bOut = new Date(b.checkOutDate);
-                return bIn <= currentNight && currentNight < bOut;
-            }).length;
-            if (count > maxOccupied) {
-                maxOccupied = count;
-            }
+        for (const night of [start, ...bookings.map(b => b.checkInDate)]) {
+            if (night < start) continue;
+            const count = bookings.filter(b => b.checkInDate <= night && night < b.checkOutDate).length;
+            maxOccupied = Math.max(maxOccupied, count);
         }
         const spotsLeft = Math.max(0, campground.capacity - maxOccupied);
 
         return res.status(200).json({
             success: true,
-            available: spotsLeft > 0,
-            spotsLeft: spotsLeft,
-            capacity: campground.capacity
+            data: {
+                available: spotsLeft > 0,
+                spotsLeft: spotsLeft,
+                capacity: campground.capacity
+            }
         });
     }catch(err){
         return res.status(500).json({success:false, message: err.message});
@@ -188,18 +186,17 @@ exports.updateCampground = async(req,res,next) => {
     }
 }
 
-//@desc     Campground campground
+//@desc     Delete campground
 //@route    DELETE /api/v1/campgrounds/:id
 //@access   Private
 exports.deleteCampground = async(req,res,next) => {
     try{
-        const campground = await Campground.findById(req.params.id);
-        
+        const campground = await Campground.findByIdAndDelete(req.params.id);
+
         if(!campground){
             return res.status(404).json({success:false});
         }
 
-        await Campground.deleteOne({_id: req.params.id});
         await Booking.deleteMany({campground: req.params.id});
 
         res.status(200).json({success:true, data: {}});

@@ -43,9 +43,6 @@ const CampGroundSchema = new mongoose.Schema({
         min: [1, 'Capacity must be at least 1'],
         validate: [Number.isInteger, 'Capacity must be a whole number']
     },
-},{
-    toJSON: {virtuals:true},
-    toObject: {virtuals:true}
 })
 
 

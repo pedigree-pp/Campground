@@ -2,23 +2,12 @@ const Booking = require('../models/Booking');
 
 //@desc     Get all bookings
 //@route    GET /api/v1/bookings
-//@access   Public
+//@access   Private
 exports.getBookings = async(req,res,next)=>{
-    let query;
-
     //General users can see only their own bookings
-    if(req.user.role !== 'admin'){
-        query = Booking.find({user:req.user.id})
-            .populate({path:'campground',select:'name address telephone'})
-    }else{
-        if(req.params.campgroundId){
-            query = Booking.find({campground: req.params.campgroundId})
-                .populate({path:'campground',select:'name address telephone'})
-        }else{
-            query = Booking.find()
-                .populate({path:'campground',select:'name address telephone'})
-        }
-    }
+    const filter = req.user.role === 'admin' ? {} : {user: req.user.id};
+    if(req.params.campgroundId) filter.campground = req.params.campgroundId;
+    const query = Booking.find(filter).populate({path:'campground',select:'name province telephone'});
     try{    
         const bookings = await query;
         res.status(200).json({
