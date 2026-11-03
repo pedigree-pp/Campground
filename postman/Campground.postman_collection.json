@@ -1342,12 +1342,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"returns available, spotsLeft, capacity\", () => {",
+                  "pm.test(\"empty campground has every spot free\", () => {",
                   "  const res = pm.response.json();",
                   "  pm.expect(res.success).to.eql(true);",
-                  "  pm.expect(res.available).to.be.a(\"boolean\");",
-                  "  pm.expect(res.spotsLeft).to.be.a(\"number\");",
-                  "  pm.expect(res.capacity).to.be.a(\"number\");",
+                  "  pm.expect(res.data.available).to.eql(true);",
+                  "  pm.expect(res.data.spotsLeft).to.eql(res.data.capacity);",
                   "});"
                 ]
               }

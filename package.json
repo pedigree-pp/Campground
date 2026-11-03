@@ -31,8 +31,7 @@
     "helmet": "^8.3.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.11.4",
-    "xss-clean": "^0.1.4"
+    "mongoose": "^9.11.4"
   },
   "devDependencies": {
     "newman": "^6.2.3",
