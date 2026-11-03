@@ -12,6 +12,7 @@ const connectDB = require('./config/db');
 // Route files
 const auth = require('./routes/auth.js');
 const campgrounds = require('./routes/campground.js');
+const bookings = require('./routes/booking.js');
 
 // Load env vars
 dotenv.config({path:'./config/config.env'});
@@ -19,6 +20,9 @@ dotenv.config({path:'./config/config.env'});
 connectDB();
 
 const app = express();
+
+// Set query parser to extended (enables nested object parsing like capacity[gte]=4)
+app.set('query parser', 'extended');
 
 // Body parser
 app.use(express.json());
@@ -57,6 +61,7 @@ app.use(cors());
 // Mount routers
 app.use('/api/v1/auth', auth);
 app.use('/api/v1/campgrounds', campgrounds);
+app.use('/api/v1/bookings', bookings);
 
 const PORT=process.env.PORT || 5000;
 

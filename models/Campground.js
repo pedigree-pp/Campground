@@ -42,7 +42,7 @@ const CampGroundSchema = new mongoose.Schema({
         required: [true, 'Please add capacity'],
         min: [1, 'Capacity must be at least 1'],
         validate: [Number.isInteger, 'Capacity must be a whole number']
-    },
-})
+    }
+});
 
 module.exports = mongoose.model('Campground',CampGroundSchema);
