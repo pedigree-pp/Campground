@@ -33,7 +33,7 @@ exports.getCampgrounds = async(req,res,next) => {
             const sortBy = req.query.sort.split(',').join(' ');
             query = query.sort(sortBy);
         }else{
-            query = query.sort('-createdAt');
+            query = query.sort('-_id');
         }
 
         //Pagination
@@ -106,11 +106,12 @@ exports.getAvailability = async(req,res,next) => {
             });
         }
 
-        const isDay = /^\d{4}-\d{2}-\d{2}$/;
+        // Rejects bad formats and impossible days like 2026-02-30
+        const isDay = s => !isNaN(new Date(s)) && new Date(s).toISOString().slice(0, 10) === s;
         const start = new Date(checkInDate);
         const end = new Date(checkOutDate);
 
-        if (!isDay.test(checkInDate) || !isDay.test(checkOutDate) || isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+        if (!isDay(checkInDate) || !isDay(checkOutDate) || end <= start) {
             return res.status(400).json({ success: false });
         }
 
@@ -148,7 +149,7 @@ exports.getAvailability = async(req,res,next) => {
             }
         });
     }catch(err){
-        return res.status(500).json({success:false, message: err.message});
+        return res.status(400).json({success:false});
     }
 }
 
