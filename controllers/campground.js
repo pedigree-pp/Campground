@@ -1,5 +1,6 @@
 const Campground = require('../models/Campground');
 const Booking = require('../models/Booking');
+const { isDay, spotsLeft } = require('../utils/booking');
 
 //@desc     Get all campgrounds
 //@route    GET /api/v1/campgrounds
@@ -106,8 +107,6 @@ exports.getAvailability = async(req,res,next) => {
             });
         }
 
-        // Rejects bad formats and impossible days like 2026-02-30
-        const isDay = s => !isNaN(new Date(s)) && new Date(s).toISOString().slice(0, 10) === s;
         const start = new Date(checkInDate);
         const end = new Date(checkOutDate);
 
@@ -124,27 +123,13 @@ exports.getAvailability = async(req,res,next) => {
             });
         }
 
-        const bookings = await Booking.find({
-            campground: req.params.id,
-            status: { $in: ['confirmed', 'offered']},
-            checkInDate: {$lt: end},
-            checkOutDate: {$gt: start},
-        });
-
-        //The fullest Night is check-in or a Night when another Booking starts
-        let maxOccupied = 0;
-        for (const night of [start, ...bookings.map(b => b.checkInDate)]) {
-            if (night < start) continue;
-            const count = bookings.filter(b => b.checkInDate <= night && night < b.checkOutDate).length;
-            maxOccupied = Math.max(maxOccupied, count);
-        }
-        const spotsLeft = Math.max(0, campground.capacity - maxOccupied);
+        const spots = await spotsLeft(campground, start, end);
 
         return res.status(200).json({
             success: true,
             data: {
-                available: spotsLeft > 0,
-                spotsLeft: spotsLeft,
+                available: spots > 0,
+                spotsLeft: spots,
                 capacity: campground.capacity
             }
         });
