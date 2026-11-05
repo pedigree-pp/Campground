@@ -86,8 +86,6 @@ exports.createBooking = async (req, res, next) => {
             });
         }
 
-        // Validate YYYY-MM-DD format (must be valid calendar day and stored as midnight UTC)
-        const isDay = s => typeof s === 'string' && !isNaN(new Date(s)) && new Date(s).toISOString().slice(0, 10) === s;
         if (!isDay(checkInDate) || !isDay(checkOutDate)) {
             return res.status(400).json({
                 success: false,
@@ -140,23 +138,11 @@ exports.createBooking = async (req, res, next) => {
         }
 
         // Capacity check: Any night already has as many Spot-holding Bookings (confirmed or offered) as Capacity
-        const overlappingBookings = await Booking.find({
-            campground: req.params.campgroundId,
-            status: { $in: ['confirmed', 'offered'] },
-            checkInDate: { $lt: end },
-            checkOutDate: { $gt: start }
-        });
-
-        // Check each night of the stay (stay is 1 to 3 nights)
-        for (let d = new Date(start); d < end; d.setUTCDate(d.getUTCDate() + 1)) {
-            const night = new Date(d);
-            const count = overlappingBookings.filter(b => b.checkInDate <= night && night < b.checkOutDate).length;
-            if (count >= campground.capacity) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Campground is full during the requested dates'
-                });
-            }
+        if (await spotsLeft(campground, start, end) === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Campground is full during the requested dates'
+            });
         }
 
         // shortcut: the checks above and this create are separate calls, so parallel requests can overbook; use a transaction if real traffic arrives

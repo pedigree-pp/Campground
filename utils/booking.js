@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 
+// Validate YYYY-MM-DD format (must be valid calendar day and stored as midnight UTC)
 const isDay = s => typeof s === 'string' && !isNaN(new Date(s)) && new Date(s).toISOString().slice(0, 10) === s;
 
 async function spotsLeft(campground, start, end, excludeBookingId = null){
