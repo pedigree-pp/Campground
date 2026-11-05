@@ -30,3 +30,8 @@ async function spotsLeft(campground, start, end, excludeBookingId = null){
 }
 
 module.exports = {isDay, spotsLeft};
+
+
+  
+
+  

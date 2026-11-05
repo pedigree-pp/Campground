@@ -42,7 +42,7 @@ app.use(xss({allowedKeys: ['password']}));
 // Rate Limiting
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 mins
-    max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100
+    max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 1000
 });
 app.use(limiter);
 
