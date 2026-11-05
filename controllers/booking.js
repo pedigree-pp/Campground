@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const Campground = require('../models/Campground');
+const {isDay, spotsLeft} = require('../utils/booking');
 
 //@desc     Get all bookings
 //@route    GET /api/v1/bookings
