@@ -5,7 +5,7 @@ const isDay = s => typeof s === 'string' && !isNaN(new Date(s)) && new Date(s).t
 
 async function spotsLeft(campground, start, end, excludeBookingId = null){
     const filter = {
-        campground: campground._id || campground,
+        campground: campground._id,
         status: { $in: ['confirmed', 'offered'] },
         checkInDate: { $lt: end },
         checkOutDate: { $gt: start }
@@ -21,7 +21,7 @@ async function spotsLeft(campground, start, end, excludeBookingId = null){
     // (Occupancy can only increase on check-in day or on a day another booking starts)
     let maxOccupied = 0;
     for (const night of [start, ...bookings.map(b => b.checkInDate)]) {
-        if (night < start || night >= end) continue;
+        if (night < start) continue;
         const count = bookings.filter(b => b.checkInDate <= night && night < b.checkOutDate).length;
         maxOccupied = Math.max(maxOccupied, count);
     }
@@ -30,8 +30,3 @@ async function spotsLeft(campground, start, end, excludeBookingId = null){
 }
 
 module.exports = {isDay, spotsLeft};
-
-
-  
-
-  
