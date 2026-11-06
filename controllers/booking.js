@@ -250,3 +250,38 @@ exports.updateBooking = async(req,res,next) => {
         })
     }
 }
+
+//@desc     Delete booking
+//@route    DELETE /api/v1/bookings/:id
+//@access   Private
+exports.deleteBooking = async (req,res,next) => {
+    try{
+        const booking = await Booking.findById(req.params.id);
+
+        if(!booking){
+            return res.status(404).json({
+                success: false,
+                message: `Booking ${req.params.id} is not found`
+            })
+        }
+
+        if(req.user.role == 'user' && booking.user.toString() !== req.user.id){
+            return res.status(403).json({
+                success: false,
+                message: `User ${req.user.id} is not authorized to update this booking`
+            })
+        }
+
+        const deleteBooking = await Booking.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({
+            success: true,
+            data: {}
+        })
+    }catch(err){
+        return res.status(500).json({
+            success: false,
+            message: 'Cannot delete Booking'
+        })
+    }
+}
