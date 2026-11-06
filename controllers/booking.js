@@ -168,7 +168,7 @@ exports.createBooking = async (req, res, next) => {
 };
 
 //@desc     Update booking
-//@route    POST /api/v1/bookings/:id
+//@route    PUT /api/v1/bookings/:id
 //@access   Private
 exports.updateBooking = async(req,res,next) => {
     try{
@@ -192,7 +192,7 @@ exports.updateBooking = async(req,res,next) => {
          if (!checkInDate || !checkOutDate) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide either checkInDate or checkOutDate'
+                message: 'Please provide both checkInDate and checkOutDate'
             });
         }
 
@@ -224,6 +224,9 @@ exports.updateBooking = async(req,res,next) => {
         }
 
         const campground = await Campground.findById(booking.campground);
+        if (!campground) {
+            return res.status(404).json({ success: false, message: 'Campground not found' });
+        }
 
         if (await spotsLeft(campground, start, end, booking._id) === 0) {
             return res.status(400).json({
@@ -268,7 +271,7 @@ exports.deleteBooking = async (req,res,next) => {
         if(req.user.role == 'user' && booking.user.toString() !== req.user.id){
             return res.status(403).json({
                 success: false,
-                message: `User ${req.user.id} is not authorized to update this booking`
+                message: `User ${req.user.id} is not authorized to delete this booking`
             })
         }
 
