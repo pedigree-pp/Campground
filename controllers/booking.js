@@ -178,18 +178,18 @@ exports.updateBooking = async(req,res,next) => {
          if(!booking){
             return res.status(404).json({
                 success: false,
-                message: "No booking with the id of ${req.params.campgroundId}"
+                message: `No booking with the id of ${req.params.id}`
             });
          }
 
-         if(req.user.role == 'User' && req.user.id != booking.user.id){
+         if(req.user.role == 'user' && booking.user.toString() !== req.user.id){
             return res.status(403).json({
                 success: false,
-                message: 'No authorized access'
+                message: `User ${req.user.id} is not authorized to update this booking`
             })
          }
 
-         if (!checkInDate && !checkOutDate) {
+         if (!checkInDate || !checkOutDate) {
             return res.status(400).json({
                 success: false,
                 message: 'Please provide either checkInDate or checkOutDate'
@@ -206,34 +206,47 @@ exports.updateBooking = async(req,res,next) => {
         const start = new Date(checkInDate);
         const end = new Date(checkOutDate);
 
-        if(end < start){
+        if(end <= start){
             return res.status(400).json({
                 success: false,
                 message: 'Check-out date must be after check-in date'
             })
         }
 
-        if (await spotsLeft(campground, start, end) === 0) {
+        const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+        if (diffDays > 3) {
+            return res.status(400).json({ success: false, message: 'Stay cannot be more than 3 nights' });
+        }
+
+        const todayUTC = new Date(new Date().toISOString().slice(0, 10));
+        if (start < todayUTC) {
+            return res.status(400).json({ success: false, message: 'Check-in date cannot be in the past' });
+        }
+
+        const campground = await Campground.findById(booking.campground);
+
+        if (await spotsLeft(campground, start, end, booking._id) === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Campground is full during the requested dates'
             });
         }
 
-        booking = await booking.findByIdandUpdate(req.params.id,{
+        const updateBooking = await Booking.findByIdAndUpdate(req.params.id,{
             checkInDate: start,
             checkOutDate: end,
-            status: "comfirmed"
+        },{ returnDocument: 'after', 
+            runValidators: true 
         });
 
-        res.status(201).json({
+        res.status(200).json({
             success: true,
-            data: booking
+            data: updateBooking
         });
     }catch(err){
         return res.status(500).json({
             success: false,
-            message: "Cannot update Appointment"
+            message: "Cannot update Booking"
         })
     }
 }
