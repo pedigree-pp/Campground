@@ -2106,6 +2106,46 @@
           ]
         },
         {
+          "name": "Create booking with no body returns 400",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{cap1CampgroundId}}",
+                "bookings"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bookingUserToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Booking 1 for user succeeds",
           "request": {
             "method": "POST",
@@ -3024,12 +3064,7 @@
           "name": "Edit booking with no body returns 400",
           "request": {
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/bookings/{{booking1Id}}",
               "host": [
@@ -3039,10 +3074,6 @@
                 "bookings",
                 "{{booking1Id}}"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": ""
             },
             "auth": {
               "type": "bearer",
