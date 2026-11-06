@@ -1,6 +1,6 @@
 const Booking = require('../models/Booking');
 const Campground = require('../models/Campground');
-const {isDay, spotsLeft} = require('../utils/booking');
+const {isDay, spotsLeft, dateError} = require('../utils/booking');
 
 //@desc     Get all bookings
 //@route    GET /api/v1/bookings
@@ -68,7 +68,7 @@ exports.getBooking = async (req, res, next) => {
 //@access   Private
 exports.createBooking = async (req, res, next) => {
     try {
-        const { checkInDate, checkOutDate } = req.body;
+        const { checkInDate, checkOutDate } = req.body || {};
 
         // Check if campground exists
         const campground = await Campground.findById(req.params.campgroundId);
@@ -79,48 +79,17 @@ exports.createBooking = async (req, res, next) => {
             });
         }
 
-        if (!checkInDate || !checkOutDate) {
+        const dateErr = dateError(checkInDate, checkOutDate);
+        if (dateErr) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide both checkInDate and checkOutDate'
-            });
-        }
-
-        if (!isDay(checkInDate) || !isDay(checkOutDate)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Dates must be in YYYY-MM-DD format'
+                message: dateErr
             });
         }
 
         const start = new Date(checkInDate);
         const end = new Date(checkOutDate);
-
-        // Check-out must be after check-in
-        if (end <= start) {
-            return res.status(400).json({
-                success: false,
-                message: 'Check-out date must be after check-in date'
-            });
-        }
-
-        // Stay cannot be more than 3 nights
-        const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
-        if (diffDays > 3) {
-            return res.status(400).json({
-                success: false,
-                message: 'Stay cannot be more than 3 nights'
-            });
-        }
-
-        // Check-in cannot be before today's UTC date
         const todayUTC = new Date(new Date().toISOString().slice(0, 10));
-        if (start < todayUTC) {
-            return res.status(400).json({
-                success: false,
-                message: 'Check-in date cannot be in the past'
-            });
-        }
 
         // User can only have at most 3 active bookings (confirmed, waiting, or offered with check-out in the future) - Admins exempt
         if (req.user.role !== 'admin') {
@@ -166,3 +135,111 @@ exports.createBooking = async (req, res, next) => {
         });
     }
 };
+
+//@desc     Update booking
+//@route    PUT /api/v1/bookings/:id
+//@access   Private
+exports.updateBooking = async(req,res,next) => {
+    try{
+        const {checkInDate, checkOutDate} = req.body || {};
+
+        const booking = await Booking.findById(req.params.id);
+        if(!booking){
+            return res.status(404).json({
+                success: false,
+                message: `No booking with the id of ${req.params.id}`
+            });
+        }
+
+        if(req.user.role == 'user' && booking.user.toString() !== req.user.id){
+            return res.status(403).json({
+                success: false,
+                message: `User ${req.user.id} is not authorized to update this booking`
+            });
+        }
+
+        // A finished stay no longer counts toward the limit of 3, so editing it back to life would get around that limit
+        if (booking.checkOutDate <= new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'A finished stay cannot be edited'
+            });
+        }
+
+        const dateErr = dateError(checkInDate, checkOutDate);
+        if (dateErr) {
+            return res.status(400).json({
+                success: false,
+                message: dateErr
+            });
+        }
+
+        const start = new Date(checkInDate);
+        const end = new Date(checkOutDate);
+
+        const campground = await Campground.findById(booking.campground);
+        if (!campground) {
+            return res.status(404).json({ success: false, message: 'Campground not found' });
+        }
+
+        if (await spotsLeft(campground, start, end, booking._id) === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Campground is full during the requested dates'
+            });
+        }
+
+        // shortcut: the checks above and this update are separate calls, so parallel requests can overbook; use a transaction if real traffic arrives
+        const updateBooking = await Booking.findByIdAndUpdate(req.params.id,{
+            checkInDate: start,
+            checkOutDate: end,
+        },{ returnDocument: 'after', 
+            runValidators: true 
+        });
+
+        res.status(200).json({
+            success: true,
+            data: updateBooking
+        });
+    }catch(err){
+        return res.status(500).json({
+            success: false,
+            message: "Cannot update Booking"
+        })
+    }
+}
+
+//@desc     Delete booking
+//@route    DELETE /api/v1/bookings/:id
+//@access   Private
+exports.deleteBooking = async (req,res,next) => {
+    try{
+        const booking = await Booking.findById(req.params.id);
+
+        if(!booking){
+            return res.status(404).json({
+                success: false,
+                message: `Booking ${req.params.id} is not found`
+            })
+        }
+
+        if(req.user.role == 'user' && booking.user.toString() !== req.user.id){
+            return res.status(403).json({
+                success: false,
+                message: `User ${req.user.id} is not authorized to delete this booking`
+            })
+        }
+
+        await booking.deleteOne();
+
+        res.status(200).json({
+            success: true,
+            data: {}
+        })
+    }catch(err){
+        return res.status(500).json({
+            success: false,
+            message: 'Cannot delete Booking'
+        })
+    }
+}
