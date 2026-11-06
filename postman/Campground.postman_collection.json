@@ -2444,6 +2444,104 @@
           ]
         },
         {
+          "name": "Filled campground availability returns spotsLeft 0 and available false",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/availability?checkInDate=2027-04-01&checkOutDate=2027-04-03",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{cap1CampgroundId}}",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "checkInDate",
+                  "value": "2027-04-01"
+                },
+                {
+                  "key": "checkOutDate",
+                  "value": "2027-04-03"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"filled campground is not available with spotsLeft 0\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.success).to.eql(true);",
+                  "  pm.expect(res.data.available).to.eql(false);",
+                  "  pm.expect(res.data.spotsLeft).to.eql(0);",
+                  "  pm.expect(res.data.capacity).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Back-to-back stay on campground is available",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{cap1CampgroundId}}/availability?checkInDate=2027-04-03&checkOutDate=2027-04-05",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{cap1CampgroundId}}",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "checkInDate",
+                  "value": "2027-04-03"
+                },
+                {
+                  "key": "checkOutDate",
+                  "value": "2027-04-05"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"back-to-back stay is available\", () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.success).to.eql(true);",
+                  "  pm.expect(res.data.available).to.eql(true);",
+                  "  pm.expect(res.data.spotsLeft).to.eql(1);",
+                  "  pm.expect(res.data.capacity).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Owner viewing booking succeeds",
           "request": {
             "method": "GET",
