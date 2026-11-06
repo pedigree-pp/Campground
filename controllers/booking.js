@@ -166,3 +166,74 @@ exports.createBooking = async (req, res, next) => {
         });
     }
 };
+
+//@desc     Update booking
+//@route    POST /api/v1/bookings/:id
+//@access   Private
+exports.updateBooking = async(req,res,next) => {
+    try{
+        const {checkInDate, checkOutDate} = req.body;
+
+        const booking = await Booking.findById(req.params.id);
+         if(!booking){
+            return res.status(404).json({
+                success: false,
+                message: "No booking with the id of ${req.params.campgroundId}"
+            });
+         }
+
+         if(req.user.role == 'User' && req.user.id != booking.user.id){
+            return res.status(403).json({
+                success: false,
+                message: 'No authorized access'
+            })
+         }
+
+         if (!checkInDate && !checkOutDate) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide either checkInDate or checkOutDate'
+            });
+        }
+
+        if (!isDay(checkInDate) || !isDay(checkOutDate)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Dates must be in YYYY-MM-DD format'
+            });
+        }
+
+        const start = new Date(checkInDate);
+        const end = new Date(checkOutDate);
+
+        if(end < start){
+            return res.status(400).json({
+                success: false,
+                message: 'Check-out date must be after check-in date'
+            })
+        }
+
+        if (await spotsLeft(campground, start, end) === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Campground is full during the requested dates'
+            });
+        }
+
+        booking = await booking.findByIdandUpdate(req.params.id,{
+            checkInDate: start,
+            checkOutDate: end,
+            status: "comfirmed"
+        });
+
+        res.status(201).json({
+            success: true,
+            data: booking
+        });
+    }catch(err){
+        return res.status(500).json({
+            success: false,
+            message: "Cannot update Appointment"
+        })
+    }
+}
