@@ -29,9 +29,24 @@ async function spotsLeft(campground, start, end, excludeBookingId = null){
     return Math.max(0, campground.capacity - maxOccupied);
 }
 
-module.exports = {isDay, spotsLeft};
+// Check the date rules for a stay: returns an error message, or null when all of them pass
+function dateError(checkInDate, checkOutDate){
+    if (!checkInDate || !checkOutDate) return 'Please provide both checkInDate and checkOutDate';
+    if (!isDay(checkInDate) || !isDay(checkOutDate)) return 'Dates must be in YYYY-MM-DD format';
 
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
 
-  
+    // Check-out must be after check-in
+    if (end <= start) return 'Check-out date must be after check-in date';
 
-  
+    // Stay cannot be more than 3 nights
+    if ((end - start) / (1000 * 60 * 60 * 24) > 3) return 'Stay cannot be more than 3 nights';
+
+    // Check-in cannot be before today's UTC date
+    if (start < new Date(new Date().toISOString().slice(0, 10))) return 'Check-in date cannot be in the past';
+
+    return null;
+}
+
+module.exports = {isDay, spotsLeft, dateError};
