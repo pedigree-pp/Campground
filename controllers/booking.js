@@ -172,7 +172,7 @@ exports.createBooking = async (req, res, next) => {
 //@access   Private
 exports.updateBooking = async(req,res,next) => {
     try{
-        const {checkInDate, checkOutDate} = req.body;
+        const {checkInDate, checkOutDate} = req.body || {};
 
         const booking = await Booking.findById(req.params.id);
          if(!booking){
@@ -188,6 +188,14 @@ exports.updateBooking = async(req,res,next) => {
                 message: `User ${req.user.id} is not authorized to update this booking`
             })
          }
+
+        // A finished stay no longer counts toward the limit of 3, so editing it back to life would get around that limit
+        if (booking.checkOutDate <= new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'A finished stay cannot be edited'
+            });
+        }
 
          if (!checkInDate || !checkOutDate) {
             return res.status(400).json({
@@ -235,6 +243,7 @@ exports.updateBooking = async(req,res,next) => {
             });
         }
 
+        // shortcut: the checks above and this update are separate calls, so parallel requests can overbook; use a transaction if real traffic arrives
         const updateBooking = await Booking.findByIdAndUpdate(req.params.id,{
             checkInDate: start,
             checkOutDate: end,
@@ -275,7 +284,7 @@ exports.deleteBooking = async (req,res,next) => {
             })
         }
 
-        const deleteBooking = await Booking.findByIdAndDelete(req.params.id);
+        await booking.deleteOne();
 
         res.status(200).json({
             success: true,
