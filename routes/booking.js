@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const {getBookings, getBooking, createBooking, updateBooking, deleteBooking} = require('../controllers/booking');
+const {getBookings, getBooking, createBooking, updateBooking, deleteBooking, confirmBooking} = require('../controllers/booking');
 const {protect, authorize} = require('../middleware/auth');
 
 const router = express.Router({mergeParams:true});
@@ -22,6 +22,9 @@ router.param('id', (req, res, next, id) => {
 router.route('/')
     .get(getBookings)
     .post(authorize('admin', 'user'), createBooking);
+
+router.route('/:id/confirm')
+    .put(authorize('admin', 'user'), confirmBooking);
 
 router.route('/:id')
     .get(getBooking)

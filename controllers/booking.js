@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const Campground = require('../models/Campground');
 const {isDay, spotsLeft, dateError} = require('../utils/booking');
+const { offerFreeSpots } = require('../utils/waitlist');
 
 //@desc     Get all bookings
 //@route    GET /api/v1/bookings
@@ -107,25 +108,22 @@ exports.createBooking = async (req, res, next) => {
         }
 
         // Capacity check: Any night already has as many Spot-holding Bookings (confirmed or offered) as Capacity
-        if (await spotsLeft(campground, start, end) === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Campground is full during the requested dates'
-            });
-        }
+        const full = await spotsLeft(campground, start, end) === 0;
 
         // shortcut: the checks above and this create are separate calls, so parallel requests can overbook; use a transaction if real traffic arrives
-        // Create booking (user taken from token, never from body)
+        // Create booking (user taken from token, never from body); a full Campground puts it on the Waitlist
         const booking = await Booking.create({
             user: req.user.id,
             campground: req.params.campgroundId,
             checkInDate: start,
             checkOutDate: end,
-            status: 'confirmed'
+            status: full ? 'waiting' : 'confirmed',
+            queuedAt: full ? new Date() : null
         });
 
         res.status(201).json({
             success: true,
+            message: full ? 'Campground is full during the requested dates, so the Booking was waitlisted' : undefined,
             data: booking
         });
     } catch (err) {
@@ -232,6 +230,12 @@ exports.deleteBooking = async (req,res,next) => {
 
         await booking.deleteOne();
 
+        // A deleted Booking that held a Spot frees it for the Waitlist
+        // shortcut: if this fails the client gets a 500 though the Booking is gone, and the Spot waits for the next Offer; use a transaction if real traffic arrives
+        if (booking.status === 'confirmed' || booking.status === 'offered') {
+            await offerFreeSpots(booking.campground);
+        }
+
         res.status(200).json({
             success: true,
             data: {}
@@ -243,3 +247,47 @@ exports.deleteBooking = async (req,res,next) => {
         })
     }
 }
+
+//@desc     Confirm an offered booking
+//@route    PUT /api/v1/bookings/:id/confirm
+//@access   Private
+exports.confirmBooking = async (req, res, next) => {
+    try {
+        const booking = await Booking.findById(req.params.id);
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: `No booking with the id of ${req.params.id}`
+            });
+        }
+
+        // Only the owner can claim an Offer, so unlike edit and delete there is no Admin exception
+        if (booking.user.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: `User ${req.user.id} is not authorized to confirm this booking`
+            });
+        }
+
+        if (booking.status !== 'offered') {
+            return res.status(400).json({
+                success: false,
+                message: `Only an offered Booking can be confirmed, this one is ${booking.status}`
+            });
+        }
+
+        booking.status = 'confirmed';
+        await booking.save();
+
+        res.status(200).json({
+            success: true,
+            data: booking
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: 'Cannot confirm Booking'
+        });
+    }
+};
