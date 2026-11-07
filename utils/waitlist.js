@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const Campground = require('../models/Campground');
 const { spotsLeft } = require('./booking');
+const { sendOfferEmail } = require('./sendEmail');
 
 // Offer the free Spots at a Campground to its Waitlist, oldest queuedAt first
 async function offerFreeSpots(campgroundId) {
@@ -14,6 +15,9 @@ async function offerFreeSpots(campgroundId) {
             booking.status = 'offered';
             booking.offeredAt = new Date();
             await booking.save();
+
+            // Not awaited, so a slow SMTP server cannot hold up the request
+            sendOfferEmail(booking, campground);
         }
     }
 }
