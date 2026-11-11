@@ -1,11 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const {getBookings, getBooking, createBooking, updateBooking, deleteBooking, confirmBooking} = require('../controllers/booking');
-const {protect, authorize} = require('../middleware/auth');
+const {getBookings, getBooking, createBooking, updateBooking, deleteBooking, confirmBooking, expireBooking} = require('../controllers/booking');
+const {protect, authorize, verifyQstash} = require('../middleware/auth');
 
 const router = express.Router({mergeParams:true});
-
-router.use(protect);
 
 // An id that cannot exist is a 404, not a server error
 router.param('id', (req, res, next, id) => {
@@ -18,6 +16,12 @@ router.param('id', (req, res, next, id) => {
 
     next();
 });
+
+// QStash calls this with a signature instead of a login, so it goes before protect
+router.route('/:id/expire')
+    .post(verifyQstash, expireBooking);
+
+router.use(protect);
 
 router.route('/')
     .get(getBookings)

@@ -49,4 +49,7 @@ function dateError(checkInDate, checkOutDate){
     return null;
 }
 
-module.exports = {isDay, spotsLeft, dateError};
+// Read on each call: server.js loads the routes, and so this file, before dotenv runs
+const offerHoldMs = () => (parseFloat(process.env.OFFER_HOLD_MINUTES) || 1440) * 60 * 1000;
+
+module.exports = {isDay, spotsLeft, dateError, offerHoldMs};
