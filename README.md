@@ -51,7 +51,7 @@ Built with **Express 5** and **MongoDB (Mongoose)**, this service extends tradit
   - Stay constraint validation: 1 to 3 nights maximum, future check-in dates only (`>= todayUTC`).
   - Active booking limit: At most 3 active bookings per user (`confirmed`, `waiting`, or `offered` with future checkout; admins exempt).
   - **Zero-Failure Overbooking Prevention:** Booking a full campground places the booking into a `waiting` state (returns `201 Created` with a waitlist notice) rather than hard-failing with `400`.
-  - **Automated Offer Engine (`offerFreeSpots`):** When a spot-holding booking is deleted, the FIFO queue is evaluated. The earliest queued booking fitting the opened nights is promoted to `offered`, holding the spot exclusively.
+  - **Automated Offer Engine (`offerFreeSpots`):** When a spot-holding booking is deleted or moved to other dates, or an admin raises capacity, the Waitlist is checked oldest first. The earliest queued booking fitting the opened nights is promoted to `offered`, holding the spot exclusively.
   - **Offer Claiming (`PUT /bookings/:id/confirm`):** Owner-exclusive claim endpoint to confirm an active offer before the deadline.
   - **Offer Expiry (Upstash QStash):** When an Offer is made, the server asks QStash to call `POST /bookings/:id/expire` once `OFFER_HOLD_MINUTES` has passed. An unclaimed Offer then expires and the Spot goes to the next waiting Booking. A sweep every 10 seconds catches missed callbacks and expires waiting Bookings whose check-in has passed.
 
@@ -73,6 +73,7 @@ stateDiagram-v2
     [*] --> waiting: Campground is full on any night (spotsLeft == 0)
     
     waiting --> offered: Spot freed (e.g. earlier booking deleted) in FIFO order
+    waiting --> confirmed: Dates edited onto free nights
     offered --> confirmed: Owner claims via PUT /bookings/:id/confirm
     
     offered --> expired: Hold time passes unclaimed (QStash callback or sweep)
@@ -188,7 +189,7 @@ Campground/
 | `GET` | `/api/v1/campgrounds` | Public | List campgrounds with pagination, filter, select, and sort. |
 | `GET` | `/api/v1/campgrounds/:id` | Public | Retrieve detailed information for a single campground. |
 | `POST` | `/api/v1/campgrounds` | Admin | Create a new campground with capacity. |
-| `PUT` | `/api/v1/campgrounds/:id` | Admin | Update campground attributes or capacity. |
+| `PUT` | `/api/v1/campgrounds/:id` | Admin | Update campground attributes or capacity. Raising capacity offers the new spots to the Waitlist. |
 | `DELETE`| `/api/v1/campgrounds/:id` | Admin | Delete campground and cascade-delete its bookings. |
 | `GET` | `/api/v1/campgrounds/:id/availability` | Public | Check availability for given `checkInDate` and `checkOutDate`. |
 
@@ -199,7 +200,7 @@ Campground/
 | `GET` | `/api/v1/campgrounds/:campgroundId/bookings` | Private | View bookings filtered by campground. |
 | `GET` | `/api/v1/bookings/:id` | Private | View a single booking (Owner or Admin). |
 | `POST`| `/api/v1/campgrounds/:campgroundId/bookings` | Private | Create booking (`confirmed` if open, `waiting` if full). |
-| `PUT` | `/api/v1/bookings/:id` | Private | Reschedule stay dates (Owner or Admin). |
+| `PUT` | `/api/v1/bookings/:id` | Private | Reschedule stay dates (Owner or Admin). Freed nights go to the Waitlist. A `waiting` booking is confirmed if its new nights are free, otherwise it goes to the back of the Waitlist. `offered` and `expired` bookings return `400`. |
 | `DELETE`| `/api/v1/bookings/:id` | Private | Cancel booking; triggers `offerFreeSpots` to waitlist. |
 | `PUT` | `/api/v1/bookings/:id/confirm` | Private | Owner-only confirmation to claim an `offered` spot before its claim deadline. |
 | `POST` | `/api/v1/bookings/:id/expire` | QStash | Signed QStash callback (no login, `401` without a valid `Upstash-Signature`). Expires an unclaimed `offered` booking and offers the Spot to the next in line. |
@@ -306,6 +307,7 @@ npm test
   3. User A deletes booking $\rightarrow$ User B promoted to `offered`.
   4. User C attempting to confirm gets `403`.
   5. User B confirms $\rightarrow$ `confirmed`.
+- **Waitlist Edits:** Moving a confirmed booking gives the waiting booking an Offer. Editing an `offered` or `expired` booking returns `400`. A waiting booking edited onto full nights stays `waiting` with a new `queuedAt`, and one edited onto free nights becomes `confirmed`. Raising capacity gives a waiting booking an Offer.
 - **Offer Expiry:** The expire callback without a valid QStash signature returns `401` and leaves the Offer alone. An unclaimed Offer expires after the hold time, stays in its owner's list as `expired`, and the Spot passes to the next waiting Booking.
 
 Run the server for `npm test` against a throwaway database with `OFFER_HOLD_MINUTES=0.25`, no `QSTASH_TOKEN` and a raised `RATE_LIMIT_MAX`. The Offer expiry folder waits 30 seconds for an Offer to expire.

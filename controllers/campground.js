@@ -1,6 +1,7 @@
 const Campground = require('../models/Campground');
 const Booking = require('../models/Booking');
 const { isDay, spotsLeft } = require('../utils/booking');
+const { offerFreeSpots } = require('../utils/waitlist');
 
 //@desc     Get all campgrounds
 //@route    GET /api/v1/campgrounds
@@ -162,6 +163,12 @@ exports.updateCampground = async(req,res,next) => {
         
         if(!campground){
             return res.status(404).json({success:false});
+        }
+
+        // A raised Capacity frees Spots for the Waitlist, and a lowered one leaves none to offer
+        // shortcut: if this fails the client gets a 400 though the Capacity changed, and the Spots wait for the next Offer; use a transaction if real traffic arrives
+        if(req.body && req.body.capacity){
+            await offerFreeSpots(campground._id);
         }
 
         res.status(200).json({success:true, data:campground});

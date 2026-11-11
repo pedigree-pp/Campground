@@ -156,6 +156,14 @@ exports.updateBooking = async(req,res,next) => {
             });
         }
 
+        // An Offer is claimed or left to expire, and an expired Booking only waits for its owner to delete it
+        if (booking.status === 'offered' || booking.status === 'expired') {
+            return res.status(400).json({
+                success: false,
+                message: `An ${booking.status} Booking cannot be edited`
+            });
+        }
+
         // A finished stay no longer counts toward the limit of 3, so editing it back to life would get around that limit
         if (booking.checkOutDate <= new Date()) {
             return res.status(400).json({
@@ -180,7 +188,10 @@ exports.updateBooking = async(req,res,next) => {
             return res.status(404).json({ success: false, message: 'Campground not found' });
         }
 
-        if (await spotsLeft(campground, start, end, booking._id) === 0) {
+        const full = await spotsLeft(campground, start, end, booking._id) === 0;
+
+        // A waiting Booking holds no Spot to lose, so full Nights put it back on the Waitlist instead of failing
+        if (booking.status === 'confirmed' && full) {
             return res.status(400).json({
                 success: false,
                 message: 'Campground is full during the requested dates'
@@ -188,12 +199,21 @@ exports.updateBooking = async(req,res,next) => {
         }
 
         // shortcut: the checks above and this update are separate calls, so parallel requests can overbook; use a transaction if real traffic arrives
+        // New dates are a new request, so a Booking still waiting goes to the back of the Waitlist
         const updateBooking = await Booking.findByIdAndUpdate(req.params.id,{
             checkInDate: start,
             checkOutDate: end,
-        },{ returnDocument: 'after', 
-            runValidators: true 
+            status: full ? 'waiting' : 'confirmed',
+            queuedAt: full ? new Date() : null
+        },{ returnDocument: 'after',
+            runValidators: true
         });
+
+        // Nights a confirmed Booking moved off are freed for the Waitlist
+        // shortcut: if this fails the client gets a 500 though the dates changed, and the Spot waits for the next Offer; use a transaction if real traffic arrives
+        if (booking.status === 'confirmed') {
+            await offerFreeSpots(booking.campground);
+        }
 
         res.status(200).json({
             success: true,
