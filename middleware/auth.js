@@ -41,6 +41,25 @@ exports.protect = async (req, res, next) => {
     }
 }
 
+// Accept only callbacks signed by QStash: a JWT whose subject is the exact URL it was sent to
+// shortcut: only the current signing key is tried, so callbacks get 401 after a key roll until config.env is updated; also try QSTASH_NEXT_SIGNING_KEY if keys get rolled
+exports.verifyQstash = (req, res, next) => {
+    try {
+        jwt.verify(req.headers['upstash-signature'], process.env.QSTASH_CURRENT_SIGNING_KEY, {
+            algorithms: ['HS256'],
+            issuer: 'Upstash',
+            subject: `${process.env.PUBLIC_URL}${req.originalUrl}`
+        });
+    } catch (err) {
+        return res.status(401).json({
+            success: false,
+            message: 'Missing or invalid QStash signature'
+        });
+    }
+
+    next();
+}
+
 // Grant access to specific roles
 exports.authorize = (...roles) => {
     return (req, res, next) => {

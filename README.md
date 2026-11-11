@@ -25,6 +25,7 @@ Built with **Express 5** and **MongoDB (Mongoose)**, this service extends tradit
   - [Environment Variables](#environment-variables)
   - [Running the Server](#running-the-server)
 - [Testing](#testing)
+  - [Manual QStash Check](#manual-qstash-check)
 - [Security & Production Hardening](#security--production-hardening)
 - [Contributors](#contributors)
 
@@ -52,6 +53,7 @@ Built with **Express 5** and **MongoDB (Mongoose)**, this service extends tradit
   - **Zero-Failure Overbooking Prevention:** Booking a full campground places the booking into a `waiting` state (returns `201 Created` with a waitlist notice) rather than hard-failing with `400`.
   - **Automated Offer Engine (`offerFreeSpots`):** When a spot-holding booking is deleted, the FIFO queue is evaluated. The earliest queued booking fitting the opened nights is promoted to `offered`, holding the spot exclusively.
   - **Offer Claiming (`PUT /bookings/:id/confirm`):** Owner-exclusive claim endpoint to confirm an active offer before the deadline.
+  - **Offer Expiry (Upstash QStash):** When an Offer is made, the server asks QStash to call `POST /bookings/:id/expire` once `OFFER_HOLD_MINUTES` has passed. An unclaimed Offer then expires and the Spot goes to the next waiting Booking. A sweep every 10 seconds catches missed callbacks and expires waiting Bookings whose check-in has passed.
 
 - **Automated Email Notifications (Nodemailer):**
   - Instant dispatch when a waitlisted booking receives an offer.
@@ -73,9 +75,13 @@ stateDiagram-v2
     waiting --> offered: Spot freed (e.g. earlier booking deleted) in FIFO order
     offered --> confirmed: Owner claims via PUT /bookings/:id/confirm
     
+    offered --> expired: Hold time passes unclaimed (QStash callback or sweep)
+    waiting --> expired: Check-in date passes
+    
     confirmed --> [*]: Deleted / Completed
     waiting --> [*]: Deleted by user
-    offered --> [*]: Deleted / Unclaimed
+    offered --> [*]: Deleted by user
+    expired --> [*]: Deleted by user
 ```
 
 | Status | Holds Spot? | Description |
@@ -83,6 +89,7 @@ stateDiagram-v2
 | **`confirmed`** | **Yes** | Active reservation with a guaranteed spot at the campground. |
 | **`waiting`** | **No** | Queued in the waitlist with a `queuedAt` timestamp. Counts toward the user's active 3-booking limit. |
 | **`offered`** | **Yes** | Temporarily awarded a spot. Holds the spot exclusively until the claim deadline. |
+| **`expired`** | **No** | The Offer wasn't claimed in time, or check-in passed while waiting. Stays in the owner's list until deleted, and doesn't count toward the 3-booking limit. |
 
 ---
 
@@ -194,7 +201,8 @@ Campground/
 | `POST`| `/api/v1/campgrounds/:campgroundId/bookings` | Private | Create booking (`confirmed` if open, `waiting` if full). |
 | `PUT` | `/api/v1/bookings/:id` | Private | Reschedule stay dates (Owner or Admin). |
 | `DELETE`| `/api/v1/bookings/:id` | Private | Cancel booking; triggers `offerFreeSpots` to waitlist. |
-| `PUT` | `/api/v1/bookings/:id/confirm` | Private | Owner-only confirmation to claim an `offered` spot. |
+| `PUT` | `/api/v1/bookings/:id/confirm` | Private | Owner-only confirmation to claim an `offered` spot before its claim deadline. |
+| `POST` | `/api/v1/bookings/:id/expire` | QStash | Signed QStash callback (no login, `401` without a valid `Upstash-Signature`). Expires an unclaimed `offered` booking and offers the Spot to the next in line. |
 
 ---
 
@@ -244,8 +252,14 @@ JWT_COOKIE_EXPIRE=30
 # Rate Limiting
 RATE_LIMIT_MAX=1000
 
-# Waitlist Hold Duration (minutes)
+# Waitlist Hold Duration (minutes; fractions work, 0.25 is 15 seconds)
 OFFER_HOLD_MINUTES=1440
+
+# Offer expiry through Upstash QStash (leave QSTASH_TOKEN empty to let the sweep expire Offers by itself)
+QSTASH_TOKEN=
+QSTASH_URL=
+QSTASH_CURRENT_SIGNING_KEY=
+PUBLIC_URL=
 
 # Email Delivery (Ethereal test inbox)
 SMTP_HOST=smtp.ethereal.email
@@ -292,6 +306,37 @@ npm test
   3. User A deletes booking $\rightarrow$ User B promoted to `offered`.
   4. User C attempting to confirm gets `403`.
   5. User B confirms $\rightarrow$ `confirmed`.
+- **Offer Expiry:** The expire callback without a valid QStash signature returns `401` and leaves the Offer alone. An unclaimed Offer expires after the hold time, stays in its owner's list as `expired`, and the Spot passes to the next waiting Booking.
+
+Run the server for `npm test` against a throwaway database with `OFFER_HOLD_MINUTES=0.25`, no `QSTASH_TOKEN` and a raised `RATE_LIMIT_MAX`. The Offer expiry folder waits 30 seconds for an Offer to expire.
+
+### Manual QStash Check
+
+Newman runs without QStash, because QStash can't reach a local server. To check Offer expiry through QStash itself, including the signature check against a real delivery:
+
+1. In the [Upstash console](https://console.upstash.com/qstash), copy `QSTASH_URL`, `QSTASH_TOKEN` and `QSTASH_CURRENT_SIGNING_KEY`.
+2. Start a tunnel to the server and copy the `https://` address it prints. The address is new every time it starts.
+   ```bash
+   winget install --id Cloudflare.cloudflared
+   ```
+   ```bash
+   cloudflared tunnel --url http://localhost:5000
+   ```
+3. In `config/config.env`, set those three keys, `PUBLIC_URL` to the tunnel address (exactly, with no trailing slash), `OFFER_HOLD_MINUTES=0.25` and a raised `RATE_LIMIT_MAX`. Restart the server: nodemon doesn't reload on config changes.
+4. Run the Offer expiry folder:
+   ```bash
+   npx newman run postman/Campground.postman_collection.json -e postman/Campground.postman_environment.json --folder "Offer expiry"
+   ```
+5. It passes when:
+   - every assertion passes. With the token set, the sweep waits 5 minutes past the hold time, so User B's Offer expiring within 30 seconds can only be the QStash callback;
+   - the server log has no `QStash publish for Booking … failed` lines;
+   - the Upstash console's QStash logs show two messages delivered with status `200`.
+6. Afterwards, empty `QSTASH_TOKEN` again and restart before running `npm test`. With the token set and no tunnel, callbacks can't arrive and the Offer expiry folder fails.
+
+If it fails:
+- **`401` in the Upstash logs:** the signature was rejected. `PUBLIC_URL` doesn't match the tunnel address exactly, or the signing key isn't the current one.
+- **`QStash publish … failed` in the server log:** the token or `QSTASH_URL` is wrong.
+- **`502` or a connection error in the Upstash logs:** the tunnel isn't reaching the server on port 5000.
 
 ---
 

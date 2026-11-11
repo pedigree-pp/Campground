@@ -5325,6 +5325,694 @@
       ]
     },
     {
+      "name": "Offer expiry",
+      "item": [
+        {
+          "name": "Register expiry admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Expiry Admin\",\n  \"telephone\": \"0891234567\",\n  \"email\": \"{{expAdminEmail}}\",\n  \"password\": \"password123\",\n  \"role\": \"admin\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"expAdminEmail\", `expadminemail${Date.now()}@test.com`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"expAdminToken\", pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register expiry user A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Expiry User A\",\n  \"telephone\": \"0891234567\",\n  \"email\": \"{{expAEmail}}\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"expAEmail\", `expaemail${Date.now()}@test.com`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"expAToken\", pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register expiry user B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Expiry User B\",\n  \"telephone\": \"0891234567\",\n  \"email\": \"{{expBEmail}}\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"expBEmail\", `expbemail${Date.now()}@test.com`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"expBToken\", pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register expiry user C",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Expiry User C\",\n  \"telephone\": \"0891234567\",\n  \"email\": \"{{expCEmail}}\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"expCEmail\", `expcemail${Date.now()}@test.com`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"expCToken\", pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create capacity 1 campground for Offer expiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Expiry Camp {{expSuffix}}\",\n  \"address\": \"9 Lake Road\",\n  \"district\": \"Muang\",\n  \"province\": \"Loei\",\n  \"region\": \"Northeast\",\n  \"postalcode\": \"42000\",\n  \"telephone\": \"0866666666\",\n  \"capacity\": 1\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expAdminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"expSuffix\", Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"expCampgroundId\", pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User A books the only Spot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{expCampgroundId}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{expCampgroundId}}",
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkInDate\": \"2027-06-01\",\n  \"checkOutDate\": \"2027-06-03\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expAToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "const booking = pm.response.json().data;",
+                  "pm.test(\"status is confirmed\", () => pm.expect(booking.status).to.eql(\"confirmed\"));",
+                  "pm.collectionVariables.set(\"expBookingAId\", booking._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User B is waitlisted",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{expCampgroundId}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{expCampgroundId}}",
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkInDate\": \"2027-06-01\",\n  \"checkOutDate\": \"2027-06-03\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expBToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "const booking = pm.response.json().data;",
+                  "pm.test(\"status is waiting\", () => pm.expect(booking.status).to.eql(\"waiting\"));",
+                  "pm.collectionVariables.set(\"expBookingBId\", booking._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User C is waitlisted after User B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{expCampgroundId}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{expCampgroundId}}",
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkInDate\": \"2027-06-01\",\n  \"checkOutDate\": \"2027-06-03\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expCToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "const booking = pm.response.json().data;",
+                  "pm.test(\"status is waiting\", () => pm.expect(booking.status).to.eql(\"waiting\"));",
+                  "pm.collectionVariables.set(\"expBookingCId\", booking._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User A deletes their Booking, so User B gets an Offer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{expBookingAId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{expBookingAId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expAToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Expire callback without a signature returns 401",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{expBookingBId}}/expire",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{expBookingBId}}",
+                "expire"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"message names the signature\", () => pm.expect(pm.response.json().message).to.match(/signature/i));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Expire callback with a forged signature returns 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Upstash-Signature",
+                "value": "not.a.signature"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{expBookingBId}}/expire",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{expBookingBId}}",
+                "expire"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"message names the signature\", () => pm.expect(pm.response.json().message).to.match(/signature/i));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rejected callbacks leave the Offer of User B",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{expBookingBId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{expBookingBId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expBToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"status is offered\", () => pm.expect(pm.response.json().data.status).to.eql(\"offered\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "After the hold time the Offer of User B has expired",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expBToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "setTimeout(() => {}, 30000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "const booking = pm.response.json().data.find(b => b._id === pm.collectionVariables.get(\"expBookingBId\"));",
+                  "pm.test(\"the expired Booking stays in the list of User B\", () => pm.expect(booking).to.be.an(\"object\"));",
+                  "pm.test(\"status is expired\", () => pm.expect(booking.status).to.eql(\"expired\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The Spot passes to User C",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{expBookingCId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{expBookingCId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expCToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"status is offered\", () => pm.expect(pm.response.json().data.status).to.eql(\"offered\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the Offer expiry campground",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/campgrounds/{{expCampgroundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "campgrounds",
+                "{{expCampgroundId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{expAdminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Security",
       "item": [
         {
@@ -5755,6 +6443,58 @@
     },
     {
       "key": "waiting4Id",
+      "value": ""
+    },
+    {
+      "key": "expAdminEmail",
+      "value": ""
+    },
+    {
+      "key": "expAdminToken",
+      "value": ""
+    },
+    {
+      "key": "expAEmail",
+      "value": ""
+    },
+    {
+      "key": "expAToken",
+      "value": ""
+    },
+    {
+      "key": "expBEmail",
+      "value": ""
+    },
+    {
+      "key": "expBToken",
+      "value": ""
+    },
+    {
+      "key": "expCEmail",
+      "value": ""
+    },
+    {
+      "key": "expCToken",
+      "value": ""
+    },
+    {
+      "key": "expCampgroundId",
+      "value": ""
+    },
+    {
+      "key": "expSuffix",
+      "value": ""
+    },
+    {
+      "key": "expBookingAId",
+      "value": ""
+    },
+    {
+      "key": "expBookingBId",
+      "value": ""
+    },
+    {
+      "key": "expBookingCId",
       "value": ""
     }
   ]

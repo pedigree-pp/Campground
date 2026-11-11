@@ -1,6 +1,6 @@
 const Booking = require('../models/Booking');
 const Campground = require('../models/Campground');
-const {isDay, spotsLeft, dateError} = require('../utils/booking');
+const {isDay, spotsLeft, dateError, offerHoldMs} = require('../utils/booking');
 const { offerFreeSpots } = require('../utils/waitlist');
 
 //@desc     Get all bookings
@@ -277,6 +277,15 @@ exports.confirmBooking = async (req, res, next) => {
             });
         }
 
+        // The Booking can still be offered after its deadline, until the callback or the sweep expires it
+        if (Date.now() > booking.offeredAt.getTime() + offerHoldMs()) {
+            return res.status(400).json({
+                success: false,
+                message: 'The claim deadline for this Offer has passed'
+            });
+        }
+
+        // shortcut: an expiry landing between the checks above and this save is overwritten; use a conditional update if real traffic arrives
         booking.status = 'confirmed';
         await booking.save();
 
@@ -288,6 +297,36 @@ exports.confirmBooking = async (req, res, next) => {
         return res.status(500).json({
             success: false,
             message: 'Cannot confirm Booking'
+        });
+    }
+};
+
+//@desc     Expire an offered booking when its hold time ends
+//@route    POST /api/v1/bookings/:id/expire
+//@access   Public, but needs a QStash signature
+exports.expireBooking = async (req, res, next) => {
+    try {
+        // Only a Booking still offered expires, in one step, so a claim at the same moment is not overwritten
+        const booking = await Booking.findOneAndUpdate(
+            { _id: req.params.id, status: 'offered' },
+            { status: 'expired' },
+            { returnDocument: 'after' }
+        );
+
+        // shortcut: if this fails the Offer is already expired, so the QStash retry does nothing and the Spot waits for the next Offer; use a transaction if real traffic arrives
+        if (booking) {
+            await offerFreeSpots(booking.campground);
+        }
+
+        // A claimed or deleted Booking still gets 200, so QStash does not retry
+        res.status(200).json({
+            success: true,
+            data: booking || {}
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: 'Cannot expire Booking'
         });
     }
 };

@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const User = require('../models/User');
+const { offerHoldMs } = require('./booking');
 
 const formatDay = date => date.toISOString().slice(0, 10);
 
@@ -7,8 +8,7 @@ const formatDay = date => date.toISOString().slice(0, 10);
 async function sendOfferEmail(booking, campground) {
     try {
         const user = await User.findById(booking.user);
-        const holdMinutes = parseFloat(process.env.OFFER_HOLD_MINUTES) || 1440;
-        const deadline = new Date(booking.offeredAt.getTime() + holdMinutes * 60 * 1000);
+        const deadline = new Date(booking.offeredAt.getTime() + offerHoldMs());
 
         // Read config on each send: server.js loads the routes, and so this file, before dotenv runs
         const transporter = nodemailer.createTransport({
