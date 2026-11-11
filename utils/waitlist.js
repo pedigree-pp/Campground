@@ -29,7 +29,7 @@ async function offerFreeSpots(campgroundId) {
 async function scheduleExpiry(booking) {
     try {
         const callbackUrl = `${process.env.PUBLIC_URL}/api/v1/bookings/${booking._id}/expire`;
-        const response = await fetch(`https://qstash.upstash.io/v2/publish/${callbackUrl}`, {
+        const response = await fetch(`${process.env.QSTASH_URL || 'https://qstash.upstash.io'}/v2/publish/${callbackUrl}`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${process.env.QSTASH_TOKEN}`,
