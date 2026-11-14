@@ -19,6 +19,7 @@ Built with **Express 5** and **MongoDB (Mongoose)**, this service extends tradit
 - [System Architecture & Tech Stack](#system-architecture--tech-stack)
 - [Project Directory Structure](#project-directory-structure)
 - [API Endpoints Reference](#api-endpoints-reference)
+- [Diagrams](#diagrams)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation & Setup](#installation--setup)
@@ -150,6 +151,8 @@ Campground/
 │   ├── auth.js                   # Authentication & user profile logic
 │   ├── booking.js                # Booking CRUD & offer confirmation
 │   └── campground.js             # Campground CRUD & availability engine
+├── docs/
+│   └── diagrams/                 # Use Case, Sequence & UML Profile diagrams (PlantUML + PNG)
 ├── middleware/
 │   └── auth.js                   # Protect (JWT) & Authorize (RBAC) middlewares
 ├── models/
@@ -204,6 +207,26 @@ Campground/
 | `DELETE`| `/api/v1/bookings/:id` | Private | Cancel booking; triggers `offerFreeSpots` to waitlist. |
 | `PUT` | `/api/v1/bookings/:id/confirm` | Private | Owner-only confirmation to claim an `offered` spot before its claim deadline. |
 | `POST` | `/api/v1/bookings/:id/expire` | QStash | Signed QStash callback (no login, `401` without a valid `Upstash-Signature`). Expires an unclaimed `offered` booking and offers the Spot to the next in line. |
+
+---
+
+## Diagrams
+
+The presentation's diagrams are PlantUML sources in [`docs/diagrams/`](docs/diagrams/), each with a rendered PNG next to it:
+
+- **Use Case:** [use-case.png](docs/diagrams/use-case.png): User and Admin, the 9 functional requirements and the extras (Capacity, availability, Waitlist, Offer email, claiming an Offer, expiry).
+- **Sequence:**
+  - [Register and Log in](docs/diagrams/sequence-register-login.png) (and log out)
+  - [Book a Spot](docs/diagrams/sequence-book-spot.png)
+  - [Join the Waitlist, then Receive and Claim an Offer](docs/diagrams/sequence-waitlist-offer-claim.png)
+  - [Offer Expires and Passes to the Next Booking](docs/diagrams/sequence-offer-expiry.png)
+- **UML Profile:** [uml-profile.png](docs/diagrams/uml-profile.png): the `<<Resource>>` paths and the User, Campground and Booking `<<Representation>>`s, with the Booking statuses.
+
+After editing a `.puml` file, render it again with the VS Code PlantUML extension, or with Java and the [PlantUML jar](https://github.com/plantuml/plantuml/releases):
+
+```bash
+java -jar plantuml.jar -tpng docs/diagrams/*.puml
+```
 
 ---
 

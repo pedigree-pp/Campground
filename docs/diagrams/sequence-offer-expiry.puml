@@ -1,0 +1,85 @@
+@startuml
+header Campground Booking Sequence Diagram
+title "Offer Expires and Passes to the Next Booking"
+
+participant "<<external API>>\n:QStash" as qstash
+participant "<<javaScript>>\n:server" as server
+participant "<<router>>\n:booking" as routerBookings
+participant "<<middleware>>\n:auth" as middlewareAuth
+participant "<<controllers>>\n:booking" as controllersBookings
+participant "<<utils>>\n:waitlist" as utilsWaitlist
+participant "<<utils>>\n:sendEmail" as utilsSendEmail
+participant "<<model>>\n:Booking" as modelBooking
+database "<<MongoDB>>\n:bookings" as BookingsDatabase
+participant "<<SMTP>>\n:Email Server" as emailServer
+participant "client\n(User C)" as clientC
+
+ref over qstash, modelBooking
+    Join the Waitlist, then Receive and Claim an Offer, up to the Offer email:
+    User B's Booking is 'offered' and QStash holds a message delayed by OFFER_HOLD_MINUTES.
+    User C's Booking is next on the Waitlist ('waiting').
+end ref
+
+== User B does not claim in time, so QStash calls back ==
+qstash->server ++:req.post('/api/v1/bookings/:id/expire')\nUpstash-Signature (no login)
+server->routerBookings ++:app.use('/api/v1/bookings',bookings)
+routerBookings->middlewareAuth ++:verifyQstash()
+middlewareAuth->middlewareAuth :jwt.verify(signature, QSTASH_CURRENT_SIGNING_KEY,\nissuer 'Upstash', subject PUBLIC_URL + originalUrl)
+break missing or invalid signature
+    middlewareAuth-->qstash :401 {success: false, message}
+end
+middlewareAuth-->routerBookings --:next()
+routerBookings->controllersBookings ++:expireBooking()
+controllersBookings->modelBooking ++:findOneAndUpdate({_id, status: 'offered'},\n{status: 'expired'})
+modelBooking->BookingsDatabase ++:BookingSchema
+BookingsDatabase-->modelBooking --:booking, or null
+modelBooking-->controllersBookings --:booking, or null
+
+alt User B's Booking was still 'offered' (now 'expired')
+    controllersBookings->utilsWaitlist ++:offerFreeSpots(campgroundId)
+    utilsWaitlist->modelBooking ++:find({campground, status: 'waiting'}).sort('queuedAt')
+    modelBooking->BookingsDatabase ++:BookingSchema
+    BookingsDatabase-->modelBooking --:waiting Bookings, oldest first
+    modelBooking-->utilsWaitlist --:waiting
+    loop each waiting Booking, oldest queuedAt first
+        utilsWaitlist->utilsWaitlist :spotsLeft(campground, its Nights)\nfrom utils/booking
+        opt a free Spot on every Night (User C's Booking)
+            utilsWaitlist->modelBooking ++:booking.save() status: 'offered', offeredAt: now
+            modelBooking->BookingsDatabase ++:BookingSchema
+            BookingsDatabase-->modelBooking --:booking
+            modelBooking-->utilsWaitlist --:booking
+            utilsWaitlist->>utilsSendEmail :sendOfferEmail(booking, campground)\n(not awaited)
+            activate utilsSendEmail
+            utilsSendEmail->emailServer :sendMail(): Campground, dates,\nclaim deadline, Booking id
+            deactivate utilsSendEmail
+            opt QSTASH_TOKEN is set
+                utilsWaitlist->>qstash :scheduleExpiry(booking): POST /v2/publish/\n{PUBLIC_URL}/api/v1/bookings/:id/expire\nUpstash-Delay: OFFER_HOLD_MINUTES
+            end
+        end
+    end
+    utilsWaitlist-->controllersBookings --:done
+    controllersBookings-->qstash :200 {success, data: booking}
+else already claimed or deleted (null)
+    controllersBookings-->qstash :200 {success, data: {}}\nso QStash does not retry
+end
+deactivate controllersBookings
+deactivate routerBookings
+deactivate server
+
+emailServer-->clientC :Offer email: "A Spot opened up at {campground name}"
+
+== Fallback: the sweep, every 10 seconds ==
+server->utilsWaitlist ++:setInterval(expireStale, 10 s)
+utilsWaitlist->modelBooking ++:updateMany({status: 'waiting', checkInDate before today},\n{status: 'expired'})
+modelBooking->BookingsDatabase ++:BookingSchema
+BookingsDatabase-->modelBooking --:result
+modelBooking-->utilsWaitlist --:result
+utilsWaitlist->modelBooking ++:updateMany({status: 'offered', offeredAt older than the hold time\n(+ 5 min grace when QStash is on)}, {status: 'expired'})
+modelBooking->BookingsDatabase ++:BookingSchema
+BookingsDatabase-->modelBooking --:result
+modelBooking-->utilsWaitlist --:result
+loop each Campground that had a stale Offer
+    utilsWaitlist->utilsWaitlist :offerFreeSpots(campgroundId), as above
+end
+deactivate utilsWaitlist
+@enduml

@@ -1,0 +1,62 @@
+@startuml
+left to right direction
+actor "User" as user
+rectangle "Campground Booking System" as CampgroundSystem {
+    usecase "Register" as register
+    usecase "Log in" as login
+    usecase "Log out" as logout
+    usecase "View\nCampgrounds" as viewCampgrounds
+    usecase "Check\nAvailability" as checkAvailability
+    usecase "Book\na Spot" as bookSpot
+    usecase "Join\nWaitlist" as joinWaitlist
+    usecase "View\nBookings" as viewBookings
+    usecase "Edit\nBooking" as editBooking
+    usecase "Delete\nBooking" as deleteBooking
+    usecase "Claim\nOffer" as claimOffer
+    usecase "Manage\nCampgrounds" as manageCampgrounds
+    usecase "Set\nCapacity" as setCapacity
+    usecase "Offer Spot\nto Waitlist" as offerSpot
+    usecase "Send Offer\nEmail" as sendOfferEmail
+    usecase "Expire\nOffer" as expireOffer
+}
+
+user -- register
+user -- login
+user -- logout
+user -- viewCampgrounds
+user -- checkAvailability
+user -- bookSpot
+user -- viewBookings
+user -- editBooking
+user -- deleteBooking
+user -- claimOffer
+
+actor "Admin" as admin
+register --- admin
+login --- admin
+logout --- admin
+viewBookings --- admin
+editBooking --- admin
+deleteBooking --- admin
+bookSpot --- admin
+manageCampgrounds --- admin
+
+bookSpot <.. joinWaitlist : <<extend>>\nfull on any Night
+manageCampgrounds .> setCapacity : <<include>>
+deleteBooking <.. offerSpot : <<extend>>\nit held a Spot
+editBooking <.. offerSpot : <<extend>>\nconfirmed Booking moved
+setCapacity <.. offerSpot : <<extend>>\nCapacity raised
+offerSpot .> sendOfferEmail : <<include>>
+expireOffer .> offerSpot : <<include>>
+
+actor "Email Server" as emailServer
+actor "QStash" as qstash
+sendOfferEmail -- emailServer
+offerSpot -- qstash
+expireOffer -- qstash
+legend bottom right
+  View, Edit and Delete Booking:
+  a User acts on their own Bookings only,
+  an Admin on any Booking.
+endlegend
+@enduml

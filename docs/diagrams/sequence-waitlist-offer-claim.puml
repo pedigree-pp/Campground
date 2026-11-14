@@ -1,0 +1,95 @@
+@startuml
+header Campground Booking Sequence Diagram
+title "Join the Waitlist, then Receive and Claim an Offer"
+
+participant "client\n(User B)" as clientB
+participant "client\n(User A)" as clientA
+participant "<<javaScript>>\n:server" as server
+participant "<<router>>\n:booking" as routerBookings
+participant "<<middleware>>\n:auth" as middlewareAuth
+participant "<<controllers>>\n:booking" as controllersBookings
+participant "<<utils>>\n:waitlist" as utilsWaitlist
+participant "<<utils>>\n:sendEmail" as utilsSendEmail
+participant "<<model>>\n:Booking" as modelBooking
+database "<<MongoDB>>\n:bookings" as BookingsDatabase
+participant "<<SMTP>>\n:Email Server" as emailServer
+participant "<<external API>>\n:QStash" as qstash
+
+== User B joins the Waitlist ==
+ref over clientB, modelBooking
+    Book a Spot: User A's confirmed Booking holds the last Spot on User B's Nights,
+    so User B's Booking is created with status 'waiting' and queuedAt = now (201)
+end ref
+
+== User A deletes their Booking, so the Spot goes to User B ==
+clientA->server ++:req.delete('/api/v1/bookings/:id')
+server->routerBookings ++:app.use('/api/v1/bookings',bookings)
+routerBookings->middlewareAuth ++:protect, authorize('admin','user')
+middlewareAuth-->routerBookings --:req.user
+routerBookings->controllersBookings ++:deleteBooking()
+controllersBookings->modelBooking ++:findById(id)
+modelBooking->BookingsDatabase ++:BookingSchema
+BookingsDatabase-->modelBooking --:booking
+modelBooking-->controllersBookings --:booking
+break not the owner and not an Admin
+    controllersBookings-->clientA :403 {success: false, message}
+end
+controllersBookings->modelBooking ++:booking.deleteOne()
+modelBooking->BookingsDatabase ++:BookingSchema
+BookingsDatabase-->modelBooking --:deleted
+modelBooking-->controllersBookings --:deleted
+
+opt the deleted Booking was 'confirmed' or 'offered' (it held a Spot)
+    controllersBookings->utilsWaitlist ++:offerFreeSpots(campgroundId)
+    utilsWaitlist->modelBooking ++:find({campground, status: 'waiting'}).sort('queuedAt')
+    modelBooking->BookingsDatabase ++:BookingSchema
+    BookingsDatabase-->modelBooking --:waiting Bookings, oldest first
+    modelBooking-->utilsWaitlist --:waiting
+    loop each waiting Booking, oldest queuedAt first
+        utilsWaitlist->utilsWaitlist :spotsLeft(campground, its Nights)\nfrom utils/booking
+        opt a free Spot on every Night (otherwise skip it)
+            utilsWaitlist->modelBooking ++:booking.save() status: 'offered', offeredAt: now
+            modelBooking->BookingsDatabase ++:BookingSchema
+            BookingsDatabase-->modelBooking --:booking
+            modelBooking-->utilsWaitlist --:booking
+            utilsWaitlist->>utilsSendEmail :sendOfferEmail(booking, campground)\n(not awaited)
+            activate utilsSendEmail
+            utilsSendEmail->emailServer :sendMail(): Campground, dates,\nclaim deadline, Booking id
+            deactivate utilsSendEmail
+            opt QSTASH_TOKEN is set
+                utilsWaitlist->>qstash :scheduleExpiry(booking): POST /v2/publish/\n{PUBLIC_URL}/api/v1/bookings/:id/expire\nUpstash-Delay: OFFER_HOLD_MINUTES
+            end
+        end
+    end
+    utilsWaitlist-->controllersBookings --:done
+end
+controllersBookings-->clientA --:200 {success, data: {}}
+deactivate routerBookings
+deactivate server
+
+emailServer-->clientB :Offer email: "A Spot opened up at {campground name}"
+
+== User B claims the Offer before the claim deadline ==
+clientB->server ++:req.put('/api/v1/bookings/:id/confirm')
+server->routerBookings ++:app.use('/api/v1/bookings',bookings)
+routerBookings->middlewareAuth ++:protect, authorize('admin','user')
+middlewareAuth-->routerBookings --:req.user
+routerBookings->controllersBookings ++:confirmBooking()
+controllersBookings->modelBooking ++:findById(id)
+modelBooking->BookingsDatabase ++:BookingSchema
+BookingsDatabase-->modelBooking --:booking
+modelBooking-->controllersBookings --:booking
+break not the owner (no Admin exception)
+    controllersBookings-->clientB :403 {success: false, message}
+end
+break status is not 'offered', or offeredAt + OFFER_HOLD_MINUTES has passed
+    controllersBookings-->clientB :400 {success: false, message}
+end
+controllersBookings->modelBooking ++:booking.save() status: 'confirmed'
+modelBooking->BookingsDatabase ++:BookingSchema
+BookingsDatabase-->modelBooking --:booking
+modelBooking-->controllersBookings --:booking
+controllersBookings-->clientB --:200 {success, data: booking}
+deactivate routerBookings
+deactivate server
+@enduml
