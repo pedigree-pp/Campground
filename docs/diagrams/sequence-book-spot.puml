@@ -1,0 +1,75 @@
+@startuml
+header Campground Booking Sequence Diagram
+title "Book a Spot"
+
+participant "client" as client
+participant "<<javaScript>>\n:server" as server
+participant "<<router>>\n:campground" as routerCampgrounds
+participant "<<router>>\n:booking" as routerBookings
+participant "<<middleware>>\n:auth" as middlewareAuth
+participant "<<controllers>>\n:booking" as controllersBookings
+participant "<<utils>>\n:booking" as utilsBooking
+participant "<<model>>\n:Campground" as modelCampground
+participant "<<model>>\n:Booking" as modelBooking
+database "<<MongoDB>>\n:campgrounds" as CampgroundsDatabase
+database "<<MongoDB>>\n:bookings" as BookingsDatabase
+
+client->server ++:req.post('/api/v1/campgrounds/:campgroundId/bookings')\nBearer token, {checkInDate, checkOutDate}
+server->routerCampgrounds ++:app.use('/api/v1/campgrounds',campgrounds)
+routerCampgrounds->routerBookings ++:router.use('/:campgroundId/bookings',bookingRouter)
+routerBookings->middlewareAuth ++:protect, authorize('admin','user')
+break no token, or an invalid one
+    middlewareAuth-->client :401 {success: false, message}
+end
+middlewareAuth-->routerBookings --:req.user
+routerBookings->controllersBookings ++:createBooking()
+
+controllersBookings->modelCampground ++:findById(campgroundId)
+modelCampground->CampgroundsDatabase ++:CampgroundSchema
+CampgroundsDatabase-->modelCampground --:campground
+modelCampground-->controllersBookings --:campground
+break no Campground with that id
+    controllersBookings-->client :404 {success: false, message}
+end
+
+controllersBookings->utilsBooking ++:dateError(checkInDate, checkOutDate)
+utilsBooking-->controllersBookings --:error message, or null
+break missing date, not YYYY-MM-DD, check-out not after check-in,\nmore than 3 Nights, or check-in in the past
+    controllersBookings-->client :400 {success: false, message}
+end
+
+opt req.user is a User (Admins are exempt)
+    controllersBookings->modelBooking ++:countDocuments({user, status in confirmed/waiting/offered,\ncheckOutDate after today})
+    modelBooking->BookingsDatabase ++:BookingSchema
+    BookingsDatabase-->modelBooking --:count
+    modelBooking-->controllersBookings --:activeBookings
+    break activeBookings >= 3
+        controllersBookings-->client :400 {success: false, message}
+    end
+end
+
+controllersBookings->utilsBooking ++:spotsLeft(campground, checkInDate, checkOutDate)
+utilsBooking->modelBooking ++:find({campground, status in confirmed/offered,\nstay overlaps the Nights})
+modelBooking->BookingsDatabase ++:BookingSchema
+BookingsDatabase-->modelBooking --:bookings holding a Spot
+modelBooking-->utilsBooking --:bookings
+utilsBooking-->controllersBookings --:Capacity minus the fullest Night
+
+alt spotsLeft > 0
+    controllersBookings->modelBooking ++:create({user, campground, dates,\nstatus: 'confirmed'})
+    modelBooking->BookingsDatabase ++:BookingSchema
+    BookingsDatabase-->modelBooking --:booking
+    modelBooking-->controllersBookings --:booking
+    controllersBookings-->client :201 {success, data: booking}
+else spotsLeft == 0 (full on any Night)
+    controllersBookings->modelBooking ++:create({user, campground, dates,\nstatus: 'waiting', queuedAt: now})
+    modelBooking->BookingsDatabase ++:BookingSchema
+    BookingsDatabase-->modelBooking --:booking
+    modelBooking-->controllersBookings --:booking
+    controllersBookings-->client :201 {success, message: 'Campground is full\nduring the requested dates, so the Booking\nwas waitlisted', data: booking}
+end
+deactivate controllersBookings
+deactivate routerBookings
+deactivate routerCampgrounds
+deactivate server
+@enduml

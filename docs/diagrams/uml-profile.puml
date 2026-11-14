@@ -1,0 +1,138 @@
+@startuml
+left to right direction
+package "Campground Booking"{
+    class "<<Application>>\nCampgroundService" as CampgroundService{}
+
+    class "<<Resource>>\nAuth" as ResourceAuth{}
+
+    class "<<Resource>>\nRegister" as ResourceRegister{
+        <<POST>> +register(): Token
+    }
+
+    class "<<Resource>>\nLogin" as ResourceLogin{
+        <<POST>> +login(): Token
+    }
+
+    class "<<Resource>>\nMe" as ResourceMe{
+        <<GET>> +getMe(): User
+    }
+
+    class "<<Resource>>\nLogout" as ResourceLogout{
+        <<GET>> +logout(): void
+    }
+
+    class "<<Resource>>\nCampgrounds" as ResourceCampgrounds{
+        <<GET>> +getCampgrounds(): Campground[]
+        <<POST>> +createCampground(): Campground
+    }
+
+    class "<<Resource>>\nCampground" as ResourceCampground{
+        <<GET>> +getCampground(): Campground
+        <<PUT>> +updateCampground(): Campground
+        <<DELETE>> +deleteCampground(): void
+    }
+
+    class "<<Resource>>\nAvailability" as ResourceAvailability{
+        <<GET>> +getAvailability(): Availability
+    }
+
+    class "<<Resource>>\nCampgroundBookings" as ResourceCampgroundBookings{
+        <<GET>> +getBookings(): Booking[]
+        <<POST>> +createBooking(): Booking
+    }
+
+    class "<<Resource>>\nBookings" as ResourceBookings{
+        <<GET>> +getBookings(): Booking[]
+    }
+
+    class "<<Resource>>\nBooking" as ResourceBooking{
+        <<GET>> +getBooking(): Booking
+        <<PUT>> +updateBooking(): Booking
+        <<DELETE>> +deleteBooking(): void
+    }
+
+    class "<<Resource>>\nConfirm" as ResourceConfirm{
+        <<PUT>> +confirmBooking(): Booking
+    }
+
+    class "<<Resource>>\nExpire" as ResourceExpire{
+        <<POST>> +expireBooking(): Booking
+    }
+
+    class "<<Representation>>\nUser" as RepresentationUser{
+        -name: String
+        -telephone: String
+        -email: String
+        -password: String
+        -role: String
+        -createdAt: Date
+    }
+
+    class "<<Representation>>\nCampground" as RepresentationCampground{
+        -name: String
+        -address: String
+        -district: String
+        -province: String
+        -region: String
+        -postalcode: String
+        -telephone: String
+        -capacity: Number
+    }
+
+    class "<<Representation>>\nBooking" as RepresentationBooking{
+        -user: ObjectId
+        -campground: ObjectId
+        -checkInDate: Date
+        -checkOutDate: Date
+        -status: BookingStatus
+        -queuedAt: Date
+        -offeredAt: Date
+        -createdAt: Date
+    }
+
+    class "<<Representation>>\nAvailability" as RepresentationAvailability{
+        -available: Boolean
+        -spotsLeft: Number
+        -capacity: Number
+    }
+
+    enum "BookingStatus" as BookingStatus{
+        confirmed
+        waiting
+        offered
+        expired
+    }
+}
+
+CampgroundService ..> ResourceAuth:"/auth\n<<Path>>"
+CampgroundService ..> ResourceCampgrounds:"/campgrounds\n<<Path>>"
+CampgroundService ..> ResourceBookings:"/bookings\n<<Path>>"
+
+ResourceAuth ..> ResourceRegister:"/register\n<<Path>>"
+ResourceAuth ..> ResourceLogin:"/login\n<<Path>>"
+ResourceAuth ..> ResourceMe:"/me\n<<Path>>"
+ResourceAuth ..> ResourceLogout:"/logout\n<<Path>>"
+
+ResourceCampgrounds ..> ResourceCampground:"/{campgroundId}\n<<Path>>"
+ResourceCampground ..> ResourceAvailability:"/availability\n<<Path>>"
+ResourceCampground ..> ResourceCampgroundBookings:"/bookings\n<<Path>>"
+ResourceBookings ..> ResourceBooking:"/{bookingId}\n<<Path>>"
+ResourceBooking ..> ResourceConfirm:"/confirm\n<<Path>>"
+ResourceBooking ..> ResourceExpire:"/expire\n<<Path>>"
+
+ResourceRegister ..> RepresentationUser:"<<use>>"
+ResourceLogin ..> RepresentationUser:"<<use>>"
+ResourceMe ..> RepresentationUser:"<<use>>"
+ResourceCampgrounds ..> RepresentationCampground:"<<use>>"
+ResourceCampground ..> RepresentationCampground:"<<use>>"
+ResourceAvailability ..> RepresentationAvailability:"<<use>>"
+ResourceCampgroundBookings ..> RepresentationBooking:"<<use>>"
+ResourceBookings ..> RepresentationBooking:"<<use>>"
+ResourceBooking ..> RepresentationBooking:"<<use>>"
+ResourceConfirm ..> RepresentationBooking:"<<use>>"
+ResourceExpire ..> RepresentationBooking:"<<use>>"
+
+RepresentationBooking "*" --> "1" RepresentationUser:user
+RepresentationBooking "*" --> "1" RepresentationCampground:campground
+RepresentationBooking ..> BookingStatus:"<<use>>"
+@enduml
