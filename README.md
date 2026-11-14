@@ -296,7 +296,14 @@ The project includes an end-to-end automated testing suite executed via **Newman
 npm test
 ```
 
+For the presentation, run only the **Demo** folder. It follows the presentation guide's steps 1–12 in order (user register, log in, view campgrounds, book with invalid cases, view, edit and delete own bookings, log out, then admin log in, view, edit and delete any booking). Each request name starts with its step number. It adds its own campground and removes it at the end.
+
+```bash
+npm run demo
+```
+
 ### What the Test Suite Verifies:
+- **Demo:** The presentation steps 1–12, in order.
 - **Authentication & Security:** Registration, token issuance, password security, NoSQL injection prevention, XSS stripping, and Helmet response headers.
 - **Campgrounds:** CRUD operations, filter parsing (`gt`/`gte`), field projections, integer capacity enforcement, and cascade deletion.
 - **Availability:** Open campgrounds, fully-booked campgrounds (`spotsLeft = 0`), and back-to-back booking edges.
